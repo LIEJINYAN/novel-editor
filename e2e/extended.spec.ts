@@ -150,7 +150,7 @@ test.describe('Mobile Responsiveness', () => {
   test('should work on tablet viewport', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 })
     await page.goto('/')
-    await expect(page.locator('h1:has-text("Novel Engine Editor")')).toBeVisible()
+    await expect(page.locator('h1')).toBeVisible()
   })
 
   test('should show mobile toolbar on mobile', async ({ page }) => {

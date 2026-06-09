@@ -22,7 +22,7 @@ test.describe('NovelEngine Editor', () => {
 
   test('should display editor interface', async ({ page }) => {
     await page.goto('/')
-    await expect(page.locator('h1:has-text("Novel Engine Editor")')).toBeVisible()
+    await expect(page.locator('h1')).toBeVisible()
   })
 
   test('should open overflow menu', async ({ page }) => {

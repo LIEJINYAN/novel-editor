@@ -266,8 +266,8 @@ function App() {
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
             <LanguageSwitcher />
-            <button className={`text-editor-muted hover:text-editor-text text-sm ${focusMode ? 'text-editor-accent' : ''}`} onClick={toggleFocusMode} title="专注模式" aria-label="专注模式" aria-pressed={focusMode}>🎯</button>
-            <button className={`text-editor-muted hover:text-editor-text text-sm ${typewriterMode ? 'text-editor-accent' : ''}`} onClick={toggleTypewriterMode} title="打字机模式" aria-label="打字机模式" aria-pressed={typewriterMode}>⌨️</button>
+            <button className={`text-editor-muted hover:text-editor-text text-sm ${focusMode ? 'text-editor-accent' : ''}`} onClick={toggleFocusMode} title={t('editor.focusMode')} aria-label={t('editor.focusMode')} aria-pressed={focusMode}>🎯</button>
+            <button className={`text-editor-muted hover:text-editor-text text-sm ${typewriterMode ? 'text-editor-accent' : ''}`} onClick={toggleTypewriterMode} title={t('editor.typewriter')} aria-label={t('editor.typewriter')} aria-pressed={typewriterMode}>⌨️</button>
             <button className="text-editor-muted hover:text-editor-text text-sm" onClick={toggleFullscreen} title="全屏" aria-label="全屏模式" aria-expanded={fullscreen}>⛶</button>
           </div>
 
@@ -278,23 +278,23 @@ function App() {
 
           {/* Overflow menu */}
           <div className="flex items-center ml-2 relative" ref={moreMenuRef}>
-            <button className="text-editor-muted hover:text-editor-text text-sm" onClick={() => setMoreMenuOpen(!moreMenuOpen)} title="更多功能" aria-label="更多功能">
+            <button className="text-editor-muted hover:text-editor-text text-sm" onClick={() => setMoreMenuOpen(!moreMenuOpen)} title={t('menu.overflow')} aria-label={t('menu.overflow')}>
               ⋯
             </button>
             {moreMenuOpen && (
               <div className="absolute top-full right-0 mt-1 bg-editor-surface border border-editor-border rounded shadow-lg z-50 min-w-[160px] max-h-[60vh] overflow-y-auto">
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingStatsOpen(true); setMoreMenuOpen(false) }}>📈 写作统计</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setShortcutsHelpOpen(true); setMoreMenuOpen(false) }}>❓ 快捷键帮助</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingModesOpen(true); setMoreMenuOpen(false) }}>✍️ 写作模式</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setPluginMarketOpen(true); setMoreMenuOpen(false) }}>🧩 插件市场</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingChartOpen(true); setMoreMenuOpen(false) }}>📊 写作数据</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setTemplatesOpen(true); setMoreMenuOpen(false) }}>📝 文档模板</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setReminderOpen(true); setMoreMenuOpen(false) }}>🔔 写作提醒</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setShareOpen(true); setMoreMenuOpen(false) }}>📤 分享</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setClipboardOpen(true); setMoreMenuOpen(false) }}>📋 剪贴板</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingStatsOpen(true); setMoreMenuOpen(false) }}>📈 {t('editor.writingStats')}</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setShortcutsHelpOpen(true); setMoreMenuOpen(false) }}>❓ {t('editor.shortcutsHelp')}</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingModesOpen(true); setMoreMenuOpen(false) }}>✍️ {t('editor.writingModes')}</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setPluginMarketOpen(true); setMoreMenuOpen(false) }}>🧩 {t('editor.pluginMarket')}</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingChartOpen(true); setMoreMenuOpen(false) }}>📊 {t('editor.writingChart')}</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setTemplatesOpen(true); setMoreMenuOpen(false) }}>📝 {t('editor.documentTemplates')}</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setReminderOpen(true); setMoreMenuOpen(false) }}>🔔 {t('editor.writingReminder')}</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setShareOpen(true); setMoreMenuOpen(false) }}>📤 {t('editor.documentShare')}</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setClipboardOpen(true); setMoreMenuOpen(false) }}>📋 {t('editor.clipboardHistory')}</button>
                 <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setQuickShortcutsOpen(true); setMoreMenuOpen(false) }}>⌨️ 快捷键速查</button>
                 <div className="border-t border-editor-border" />
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setSettingsOpen(true); setMoreMenuOpen(false) }}>⚙️ 设置</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setSettingsOpen(true); setMoreMenuOpen(false) }}>⚙️ {t('settings.title')}</button>
               </div>
             )}
           </div>
@@ -319,7 +319,7 @@ function App() {
                 )}
                 <div className="border-b border-editor-border relative z-10">
                   <div className="flex items-center justify-between px-3 py-2">
-                    <span className="text-xs font-semibold text-editor-muted uppercase tracking-wider">文档大纲</span>
+                    <span className="text-xs font-semibold text-editor-muted uppercase tracking-wider">{t('sidebar.documentTree')}</span>
                     <button className="text-xs text-editor-muted hover:text-editor-text" onClick={() => setOutlinePanelOpen(true)} title="展开大纲面板">⛶</button>
                   </div>
                   <DocumentOutline editor={editorRef.current?.getEditor() || null} onNavigate={(_pos: number) => {}} />
@@ -385,49 +385,49 @@ function App() {
           </span>
           {isSaving && (
             <span className="ml-4 text-yellow-500" aria-live="polite">
-              ⏳ 保存中...
+              ⏳ {t('app.loading')}
             </span>
           )}
           {lastSaved && !isSaving && (
             <span className="ml-4 text-editor-muted" aria-live="polite">
-              上次保存: {new Date(lastSaved).toLocaleTimeString()}
+              {new Date(lastSaved).toLocaleTimeString()}
             </span>
           )}
           <div className="ml-auto flex items-center gap-2">
             <button
               className="hover:text-editor-text"
               onClick={() => setFindReplaceOpen(true)}
-              title="查找替换 (Ctrl+H)"
-              aria-label="查找替换"
+              title={t('editor.findReplace')}
+              aria-label={t('editor.findReplace')}
             >
               🔎
             </button>
             <button
               className="hover:text-editor-text"
               onClick={() => setWordCountOpen(true)}
-              title="写作统计 (Ctrl+Shift+W)"
-              aria-label="写作统计"
+              title={t('editor.writingStats')}
+              aria-label={t('editor.writingStats')}
             >
               📊
             </button>
             <button
               className="hover:text-editor-text"
               onClick={() => setWordGoalOpen(true)}
-              title="字数目标"
-              aria-label="字数目标"
+              title={t('editor.wordGoal')}
+              aria-label={t('editor.wordGoal')}
             >
               🎯
             </button>
             <button
               className="hover:text-editor-text"
               onClick={() => setOutlinePanelOpen(true)}
-              title="文档大纲 (Ctrl+Shift+O)"
-              aria-label="文档大纲"
+              title={t('editor.outline')}
+              aria-label={t('editor.outline')}
             >
               📑
             </button>
             <span aria-label={`文档数量: ${docCount}`}>
-              文档数: {docCount}
+              {docCount}
             </span>
           </div>
         </footer>
