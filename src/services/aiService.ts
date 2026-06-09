@@ -50,6 +50,20 @@ function generateRequestId(): string {
   return `req_${++requestIdCounter}_${Date.now()}`
 }
 
+function buildApiUrl(baseUrl: string): string {
+  const trimmed = baseUrl.trim().replace(/\/+$/, '')
+  if (trimmed.endsWith('/v1/chat/completions') || trimmed.endsWith('/chat/completions')) {
+    return trimmed
+  }
+  if (trimmed.endsWith('/v1')) {
+    return `${trimmed}/chat/completions`
+  }
+  if (trimmed.endsWith('/v4') || trimmed.endsWith('/v3') || trimmed.endsWith('/v2')) {
+    return `${trimmed}/chat/completions`
+  }
+  return `${trimmed}/v1/chat/completions`
+}
+
 function processQueue(): void {
   if (requestQueue.length === 0 || activeRequests >= (getAIConfig()?.maxConcurrent || DEFAULT_MAX_CONCURRENT)) {
     return
@@ -88,7 +102,8 @@ async function executeRequest(item: QueueItem): Promise<void> {
         item.signal.addEventListener('abort', () => controller.abort())
       }
 
-      const response = await fetch(`${config.baseUrl}/v1/chat/completions`, {
+      const url = buildApiUrl(config.baseUrl)
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
