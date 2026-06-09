@@ -57,46 +57,6 @@
   "plugins": {
     "shell": {
       "open": true
-    },
-    "fs": {
-      "scope": {
-        "allow": ["$APPDATA/**", "$DOCUMENT/**", "$DOWNLOAD/**", "$DESKTOP/**"],
-        "deny": ["$APPDATA/Secrets/**"]
-      }
-    },
-    "dialog": {
-      "open": true,
-      "save": true
-    },
-    "path": {
-      "appDataDir": true,
-      "appLocalDataDir": true,
-      "cacheDir": true,
-      "configDir": true,
-      "dataDir": true,
-      "desktopDir": true,
-      "documentDir": true,
-      "downloadDir": true,
-      "executableDir": true,
-      "homeDir": true,
-      "localDataDir": true,
-      "pictureDir": true,
-      "publicDir": true,
-      "resourceDir": true,
-      "resolveResource": true,
-      "tempDir": true,
-      "templateDir": true,
-      "videoDir": true
     }
-  },
-  "windows": [
-    {
-      "label": "main",
-      "title": "NovelEngine Editor",
-      "width": 1200,
-      "height": 800,
-      "resizable": true,
-      "fullscreen": false
-    }
-  ]
+  }
 }
