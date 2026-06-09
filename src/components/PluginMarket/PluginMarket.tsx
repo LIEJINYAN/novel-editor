@@ -15,6 +15,10 @@ interface Plugin {
   installed: boolean
   enabled: boolean
   downloads: number
+  rating: number
+  reviewCount: number
+  homepage?: string
+  repository?: string
 }
 
 const PLUGIN_LIST: Plugin[] = [
@@ -29,6 +33,8 @@ const PLUGIN_LIST: Plugin[] = [
     installed: true,
     enabled: true,
     downloads: 1250,
+    rating: 4.5,
+    reviewCount: 23,
   },
   {
     id: 'ai-translate',
@@ -41,6 +47,8 @@ const PLUGIN_LIST: Plugin[] = [
     installed: true,
     enabled: false,
     downloads: 890,
+    rating: 4.2,
+    reviewCount: 15,
   },
   {
     id: 'word-count-plus',
@@ -53,6 +61,8 @@ const PLUGIN_LIST: Plugin[] = [
     installed: false,
     enabled: false,
     downloads: 2100,
+    rating: 4.8,
+    reviewCount: 45,
   },
   {
     id: 'theme-pack',
@@ -65,6 +75,8 @@ const PLUGIN_LIST: Plugin[] = [
     installed: false,
     enabled: false,
     downloads: 3200,
+    rating: 4.6,
+    reviewCount: 67,
   },
   {
     id: 'spell-check',
@@ -77,6 +89,8 @@ const PLUGIN_LIST: Plugin[] = [
     installed: false,
     enabled: false,
     downloads: 1560,
+    rating: 4.3,
+    reviewCount: 28,
   },
   {
     id: 'version-control',
@@ -89,10 +103,40 @@ const PLUGIN_LIST: Plugin[] = [
     installed: false,
     enabled: false,
     downloads: 980,
+    rating: 4.1,
+    reviewCount: 12,
+  },
+  {
+    id: 'fanfic-tools',
+    name: '同人创作工具',
+    icon: '💫',
+    version: '1.0.0',
+    author: 'Community',
+    description: '同人小说创作辅助工具，含角色关系图',
+    category: '写作辅助',
+    installed: false,
+    enabled: false,
+    downloads: 450,
+    rating: 4.7,
+    reviewCount: 8,
+  },
+  {
+    id: 'chapter-manager',
+    name: '章节管理器',
+    icon: '📚',
+    version: '1.2.0',
+    author: 'Community',
+    description: '可视化章节结构管理',
+    category: '编辑器扩展',
+    installed: false,
+    enabled: false,
+    downloads: 780,
+    rating: 4.4,
+    reviewCount: 19,
   },
 ]
 
-const CATEGORIES = ['全部', '编辑器扩展', 'AI增强', '导出增强', '主题']
+const CATEGORIES = ['全部', '编辑器扩展', 'AI增强', '导出增强', '主题', '写作辅助']
 
 export default function PluginMarket({ onClose }: Props) {
   const [plugins, setPlugins] = useState(PLUGIN_LIST)
@@ -175,6 +219,7 @@ export default function PluginMarket({ onClose }: Props) {
                   <div className="flex items-center gap-3 mt-2 text-[10px] text-editor-muted">
                     <span>👤 {plugin.author}</span>
                     <span>📥 {plugin.downloads}</span>
+                    <span>⭐ {plugin.rating} ({plugin.reviewCount})</span>
                     <span className="px-1.5 py-0.5 bg-editor-surface rounded">{plugin.category}</span>
                   </div>
                 </div>
@@ -212,8 +257,18 @@ export default function PluginMarket({ onClose }: Props) {
           ))}
         </div>
 
-        <div className="px-4 py-2 border-t border-editor-border text-center text-[10px] text-editor-muted">
-          共 {filteredPlugins.length} 个插件 | 已安装 {plugins.filter((p) => p.installed).length} 个
+        <div className="px-4 py-2 border-t border-editor-border">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-editor-muted">
+              共 {filteredPlugins.length} 个插件 | 已安装 {plugins.filter((p) => p.installed).length} 个
+            </span>
+            <button
+              onClick={() => window.open('https://github.com/LIEJINYAN/novel-editor/blob/main/docs/PLUGIN_DEVELOPMENT.md', '_blank')}
+              className="text-[10px] text-editor-accent hover:underline"
+            >
+              开发插件指南
+            </button>
+          </div>
         </div>
       </div>
     </div>

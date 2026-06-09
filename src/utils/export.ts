@@ -387,3 +387,103 @@ export function exportToPDF(title: string, content: object) {
     printWindow.print()
   }, 500)
 }
+
+export interface PDFStyleOptions {
+  fontSize?: number
+  fontFamily?: string
+  lineHeight?: number
+  marginTop?: number
+  marginBottom?: number
+  marginLeft?: number
+  marginRight?: number
+  pageBreakBefore?: boolean
+}
+
+export function exportToPDFWithStyle(
+  title: string,
+  content: object,
+  options: PDFStyleOptions = {}
+) {
+  const {
+    fontSize = 12,
+    fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif',
+    lineHeight = 1.8,
+    marginTop = 40,
+    marginBottom = 40,
+    marginLeft = 20,
+    marginRight = 20,
+    pageBreakBefore = false,
+  } = options
+
+  const html = tiptapToHTML(content)
+
+  const printWindow = window.open('', '_blank')
+  if (!printWindow) {
+    alert('请允许弹出窗口以导出PDF')
+    return
+  }
+
+  printWindow.document.write(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: ${marginTop}pt ${marginRight}pt ${marginBottom}pt ${marginLeft}pt;
+    }
+    body {
+      font-family: ${fontFamily};
+      font-size: ${fontSize}pt;
+      line-height: ${lineHeight};
+      color: #333;
+    }
+    h1 { font-size: ${fontSize * 2}pt; border-bottom: 2px solid #333; padding-bottom: 8px; ${pageBreakBefore ? 'page-break-before: always;' : ''} }
+    h2 { font-size: ${fontSize * 1.5}pt; margin-top: ${fontSize * 2}pt; }
+    h3 { font-size: ${fontSize * 1.2}pt; margin-top: ${fontSize * 1.5}pt; }
+    p { margin: ${fontSize * 0.5}pt 0; }
+    code { background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-size: ${fontSize * 0.9}pt; }
+    pre { background: #f5f5f5; padding: ${fontSize}pt; border-radius: 6px; overflow-x: auto; }
+    blockquote { border-left: 4px solid #ddd; margin: ${fontSize}pt 0; padding-left: ${fontSize}pt; color: #666; }
+    mark { background: #fff3cd; }
+    @media print {
+      body { margin: 0; }
+      h1 { page-break-after: avoid; }
+      h2 { page-break-after: avoid; }
+      h3 { page-break-after: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <h1>${title}</h1>
+  ${html}
+</body>
+</html>`)
+
+  printWindow.document.close()
+
+  setTimeout(() => {
+    printWindow.print()
+  }, 500)
+}
+
+export async function batchExport(
+  documents: Array<{ title: string; content: object }>,
+  format: 'markdown' | 'html' | 'txt' | 'pdf'
+) {
+  const exporters = {
+    markdown: exportToMarkdown,
+    html: exportToHTML,
+    txt: exportToTXT,
+    pdf: exportToPDF,
+  }
+
+  const exporter = exporters[format]
+  if (!exporter) return
+
+  for (const doc of documents) {
+    exporter(doc.title, doc.content)
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+}
