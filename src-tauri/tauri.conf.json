@@ -1,0 +1,102 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicholasgasior/tauri-config-schema/tauri-v2/schema.json",
+  "productName": "NovelEngine Editor",
+  "version": "0.1.0",
+  "identifier": "com.novelengine.editor",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "NovelEngine Editor",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "decorations": true,
+        "transparent": false,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [],
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": true,
+        "installerIcon": "icons/icon.ico"
+      },
+      "wix": null
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    },
+    "linux": {
+      "deb": {
+        "desktopTemplate": null
+      }
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    },
+    "fs": {
+      "scope": {
+        "allow": ["$APPDATA/**", "$DOCUMENT/**", "$DOWNLOAD/**", "$DESKTOP/**"],
+        "deny": ["$APPDATA/Secrets/**"]
+      }
+    },
+    "dialog": {
+      "open": true,
+      "save": true
+    },
+    "path": {
+      "appDataDir": true,
+      "appLocalDataDir": true,
+      "cacheDir": true,
+      "configDir": true,
+      "dataDir": true,
+      "desktopDir": true,
+      "documentDir": true,
+      "downloadDir": true,
+      "executableDir": true,
+      "homeDir": true,
+      "localDataDir": true,
+      "pictureDir": true,
+      "publicDir": true,
+      "resourceDir": true,
+      "resolveResource": true,
+      "tempDir": true,
+      "templateDir": true,
+      "videoDir": true
+    }
+  },
+  "windows": [
+    {
+      "label": "main",
+      "title": "NovelEngine Editor",
+      "width": 1200,
+      "height": 800,
+      "resizable": true,
+      "fullscreen": false
+    }
+  ]
+}
