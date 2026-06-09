@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useDocumentStore } from '../../store/documentStore'
+import Modal from '../common/Modal'
 
 interface Props {
   docId: string
@@ -37,9 +38,7 @@ export default function DocumentShare({ docId, onClose }: Props) {
     const blob = new Blob([text], { type: 'text/markdown' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
-    a.download = `${doc.title}.md`
-    a.click()
+    a.href = url; a.download = `${doc.title}.md`; a.click()
     URL.revokeObjectURL(url)
   }, [doc])
 
@@ -54,67 +53,40 @@ h1{color:#333}p{margin:1em 0}</style></head>
     const blob = new Blob([html], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
-    a.download = `${doc.title}.html`
-    a.click()
+    a.href = url; a.download = `${doc.title}.html`; a.click()
     URL.revokeObjectURL(url)
   }, [doc])
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-editor-surface border border-editor-border rounded-lg shadow-2xl w-[400px]">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-editor-border">
-          <h2 className="text-sm font-semibold text-editor-text">📤 分享文档</h2>
-          <button onClick={onClose} className="text-editor-muted hover:text-editor-text">✕</button>
-        </div>
-
-        <div className="p-4 space-y-4">
-          <div>
-            <label className="text-xs text-editor-muted block mb-2">分享链接</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                readOnly
-                value={shareUrl || '点击生成链接'}
-                className="flex-1 px-2 py-1.5 text-xs bg-editor-bg border border-editor-border rounded text-editor-text"
-              />
-              <button
-                onClick={handleCopy}
-                className={`px-3 py-1.5 text-xs rounded transition-colors ${copied ? 'bg-green-500 text-white' : 'bg-editor-accent text-editor-bg hover:opacity-90'}`}
-              >
-                {copied ? '已复制' : '复制'}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs text-editor-muted block mb-2">导出文件</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={handleExportMd}
-                className="px-3 py-2 text-xs bg-editor-bg border border-editor-border rounded hover:border-editor-accent transition-colors"
-              >
-                📄 导出 Markdown
-              </button>
-              <button
-                onClick={handleExportHtml}
-                className="px-3 py-2 text-xs bg-editor-bg border border-editor-border rounded hover:border-editor-accent transition-colors"
-              >
-                🌐 导出 HTML
-              </button>
-            </div>
-          </div>
-
-          <div className="text-[10px] text-editor-muted">
-            💡 提示：链接包含文档内容，可在任何浏览器中打开查看。
+    <Modal open={true} onClose={onClose} title="📤 分享文档" size="sm">
+      <div className="p-4 space-y-4">
+        <div>
+          <label className="text-xs text-editor-muted block mb-2">分享链接</label>
+          <div className="flex gap-2">
+            <input type="text" readOnly value={shareUrl || '点击生成链接'} className="flex-1 px-2 py-1.5 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
+            <button onClick={handleCopy} className={`px-3 py-1.5 text-xs rounded transition-colors ${copied ? 'bg-green-500 text-white' : 'bg-editor-accent text-editor-bg hover:opacity-90'}`}>
+              {copied ? '已复制' : '复制'}
+            </button>
           </div>
         </div>
 
-        <div className="p-3 border-t border-editor-border">
-          <button className="w-full text-xs text-editor-muted px-3 py-2 rounded hover:bg-editor-bg" onClick={onClose}>关闭</button>
+        <div>
+          <label className="text-xs text-editor-muted block mb-2">导出文件</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={handleExportMd} className="px-3 py-2 text-xs bg-editor-bg border border-editor-border rounded hover:border-editor-accent transition-colors">
+              📄 导出 Markdown
+            </button>
+            <button onClick={handleExportHtml} className="px-3 py-2 text-xs bg-editor-bg border border-editor-border rounded hover:border-editor-accent transition-colors">
+              🌐 导出 HTML
+            </button>
+          </div>
+        </div>
+
+        <div className="text-[10px] text-editor-muted">
+          💡 提示：链接包含文档内容，可在任何浏览器中打开查看。
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 
