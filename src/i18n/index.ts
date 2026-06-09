@@ -1,11 +1,15 @@
 import zhCN from './zh-CN'
 import enUS from './en-US'
+import jaJP from './ja-JP'
+import koKR from './ko-KR'
 
-export type Locale = 'zh-CN' | 'en-US'
+export type Locale = 'zh-CN' | 'en-US' | 'ja-JP' | 'ko-KR'
 
 const locales = {
   'zh-CN': zhCN,
   'en-US': enUS,
+  'ja-JP': jaJP,
+  'ko-KR': koKR,
 }
 
 const STORAGE_KEY = 'novel-engine-locale'
@@ -44,4 +48,6 @@ export function t(path: string): string {
 export const localesList: { value: Locale; label: string }[] = [
   { value: 'zh-CN', label: '简体中文' },
   { value: 'en-US', label: 'English' },
+  { value: 'ja-JP', label: '日本語' },
+  { value: 'ko-KR', label: '한국어' },
 ]

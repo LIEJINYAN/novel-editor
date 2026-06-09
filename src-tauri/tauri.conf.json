@@ -57,6 +57,14 @@
   "plugins": {
     "shell": {
       "open": true
+    },
+    "updater": {
+      "active": true,
+      "dialog": true,
+      "endpoints": [
+        "https://github.com/LIEJINYAN/novel-editor/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHJlcXVpcmVkCkJSVEY0SEVMR1BBV1JFR0FLRVIgWkhRVTM2WlFCWVdWUFNZWlBTR0hTRURKQ1dKQ1dKQ1dKQ1dKQ1dKQ1dKQw=="
     }
   }
 }

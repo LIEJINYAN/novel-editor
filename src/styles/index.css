@@ -130,3 +130,37 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
 }
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@media (max-width: 768px) {
+  .mobile-header {
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .mobile-toolbar {
+    height: 56px;
+    min-height: 56px;
+  }
+
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .scrollable-content {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+  }
+
+  .prevent-overscroll {
+    overscroll-behavior: contain;
+  }
+}
