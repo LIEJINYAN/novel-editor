@@ -180,3 +180,26 @@ test.describe('Settings Panel', () => {
     await expect(page.locator('button:has-text("外观")').first()).toBeVisible()
   })
 })
+
+test.describe('Command Palette', () => {
+  test('should open with Ctrl+K', async ({ page }) => {
+    await page.goto('/')
+    await page.keyboard.press('Control+k')
+    await expect(page.locator('input[placeholder="输入命令..."]')).toBeVisible()
+  })
+
+  test('should search commands', async ({ page }) => {
+    await page.goto('/')
+    await page.keyboard.press('Control+k')
+    await page.fill('input[placeholder="输入命令..."]', '保存')
+    await expect(page.locator('text=保存 (Ctrl+S)')).toBeVisible()
+  })
+
+  test('should close with Escape', async ({ page }) => {
+    await page.goto('/')
+    await page.keyboard.press('Control+k')
+    await expect(page.locator('input[placeholder="输入命令..."]')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('input[placeholder="输入命令..."]')).not.toBeVisible()
+  })
+})

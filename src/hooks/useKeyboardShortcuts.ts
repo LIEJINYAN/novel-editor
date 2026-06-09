@@ -20,6 +20,7 @@ interface KeyboardShortcuts {
   onFullscreen?: () => void
   onExitFocus?: () => void
   onStats?: () => void
+  onCommandPalette?: () => void
 }
 
 export function useKeyboardShortcuts({
@@ -39,6 +40,7 @@ export function useKeyboardShortcuts({
   onFullscreen,
   onExitFocus,
   onStats,
+  onCommandPalette,
 }: KeyboardShortcuts = {}) {
   const saveToDB = useDocumentStore((s) => s.saveToDB)
   const { openTabs, setActiveTab } = useTabStore()
@@ -46,6 +48,12 @@ export function useKeyboardShortcuts({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        onCommandPalette?.()
+        return
+      }
+
       const isInput = (e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA'
       const matched = matchShortcut(e)
       if (!matched) return
@@ -95,7 +103,7 @@ export function useKeyboardShortcuts({
         action()
       }
     },
-    [saveToDB, onSave, onNewDoc, onToggleSidebar, onToggleAIPanel, onSearch, onHelp, onFindReplace, onUndo, onRedo, onWordCount, onOutline, onFocusMode, onTypewriter, onFullscreen, onExitFocus, onStats, openTabs, setActiveTab, matchShortcut]
+    [saveToDB, onSave, onNewDoc, onToggleSidebar, onToggleAIPanel, onSearch, onHelp, onFindReplace, onUndo, onRedo, onWordCount, onOutline, onFocusMode, onTypewriter, onFullscreen, onExitFocus, onStats, onCommandPalette, openTabs, setActiveTab, matchShortcut]
   )
 
   useEffect(() => {

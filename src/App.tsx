@@ -40,11 +40,13 @@ const DocumentShare = lazy(() => import('./components/DocumentShare/DocumentShar
 const ClipboardHistory = lazy(() => import('./components/ClipboardHistory/ClipboardHistory'))
 const QuickShortcuts = lazy(() => import('./components/KeyboardShortcutsHelp/QuickShortcuts'))
 const MobileToolbar = lazy(() => import('./components/MobileToolbar/MobileToolbar'))
+const CommandPalette = lazy(() => import('./components/CommandPalette/CommandPalette'))
 
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary'
 import { useMobile } from './hooks/useMobile'
 
 import type { EditorRef } from './components/Editor/Editor'
+import type { Command } from './components/CommandPalette/CommandPalette'
 
 function App() {
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false)
@@ -66,6 +68,7 @@ function App() {
   const [clipboardOpen, setClipboardOpen] = useState(false)
   const [quickShortcutsOpen, setQuickShortcutsOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
 
   const { isMobile } = useMobile()
   const exportMenuRef = useClickOutside(() => setExportMenuOpen(false), exportMenuOpen)
@@ -184,11 +187,39 @@ function App() {
     onFullscreen: toggleFullscreen,
     onExitFocus: () => { if (focusMode) toggleFocusMode() },
     onStats: () => setWritingStatsOpen(true),
+    onCommandPalette: () => setCommandPaletteOpen((prev) => !prev),
   })
 
   const handleAiInsert = useCallback((text: string) => {
     editorRef.current?.insertContent(text)
   }, [])
+
+  const commands: Command[] = useMemo(() => [
+    { id: 'save', label: t('menu.save'), icon: '💾', category: '文件', shortcut: 'Ctrl+S', action: handleSave },
+    { id: 'new-doc', label: t('menu.newDoc'), icon: '📄', category: '文件', shortcut: 'Ctrl+N', action: () => {} },
+    { id: 'search', label: t('menu.search'), icon: '🔍', category: '编辑', shortcut: 'Ctrl+F', action: () => setSearchOpen(true) },
+    { id: 'find-replace', label: t('editor.findReplace'), icon: '🔎', category: '编辑', shortcut: 'Ctrl+H', action: () => setFindReplaceOpen(true) },
+    { id: 'toggle-sidebar', label: t('menu.toggleSidebar'), icon: '☰', category: '视图', shortcut: 'Ctrl+B', action: () => setSidebarOpen(!sidebarOpen) },
+    { id: 'toggle-ai', label: t('menu.toggleAIPanel'), icon: '🤖', category: '视图', shortcut: 'Ctrl+Shift+A', action: () => setAiPanelOpen(!aiPanelOpen) },
+    { id: 'toggle-theme', label: t('menu.toggleTheme'), icon: theme === 'dark' ? '☀️' : '🌙', category: '视图', action: toggleTheme },
+    { id: 'focus-mode', label: t('editor.focusMode'), icon: '🎯', category: '视图', action: toggleFocusMode },
+    { id: 'typewriter', label: t('editor.typewriter'), icon: '⌨️', category: '视图', action: toggleTypewriterMode },
+    { id: 'fullscreen', label: '全屏', icon: '⛶', category: '视图', shortcut: 'F11', action: toggleFullscreen },
+    { id: 'outline', label: t('editor.outline'), icon: '📑', category: '视图', shortcut: 'Ctrl+Shift+O', action: () => setOutlinePanelOpen(true) },
+    { id: 'word-count', label: t('editor.wordCount'), icon: '📊', category: '视图', action: () => setWordCountOpen(true) },
+    { id: 'word-goal', label: t('editor.wordGoal'), icon: '🎯', category: '写作', action: () => setWordGoalOpen(true) },
+    { id: 'writing-stats', label: t('editor.writingStats'), icon: '📈', category: '写作', action: () => setWritingStatsOpen(true) },
+    { id: 'writing-chart', label: t('editor.writingChart'), icon: '📊', category: '写作', action: () => setWritingChartOpen(true) },
+    { id: 'writing-modes', label: t('editor.writingModes'), icon: '✍️', category: '写作', action: () => setWritingModesOpen(true) },
+    { id: 'templates', label: t('editor.documentTemplates'), icon: '📝', category: '写作', action: () => setTemplatesOpen(true) },
+    { id: 'reminder', label: t('editor.writingReminder'), icon: '🔔', category: '写作', action: () => setReminderOpen(true) },
+    { id: 'shortcuts', label: t('editor.shortcutsHelp'), icon: '❓', category: '帮助', shortcut: 'F1', action: () => setShortcutsHelpOpen(true) },
+    { id: 'settings', label: t('settings.title'), icon: '⚙️', category: '设置', action: () => setSettingsOpen(true) },
+    { id: 'plugin-market', label: t('editor.pluginMarket'), icon: '🧩', category: '扩展', action: () => setPluginMarketOpen(true) },
+    { id: 'clipboard', label: t('editor.clipboardHistory'), icon: '📋', category: '工具', action: () => setClipboardOpen(true) },
+    { id: 'version-history', label: t('editor.versionHistory'), icon: '🕐', category: '工具', action: () => setVersionHistoryOpen(true) },
+    { id: 'share', label: t('editor.documentShare'), icon: '📤', category: '工具', action: () => setShareOpen(true) },
+  ], [handleSave, sidebarOpen, aiPanelOpen, theme, toggleTheme, toggleFocusMode, toggleTypewriterMode, toggleFullscreen, setSidebarOpen, setAiPanelOpen])
 
   const LoadingFallback = () => (
     <div className="flex-1 flex items-center justify-center text-editor-muted">
@@ -633,6 +664,14 @@ function App() {
           />
         </Suspense>
       )}
+
+      <Suspense fallback={null}>
+        <CommandPalette
+          open={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+          commands={commands}
+        />
+      </Suspense>
     </div>
     </ToastProvider>
   )
