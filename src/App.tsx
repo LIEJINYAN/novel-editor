@@ -31,6 +31,12 @@ const WordGoalPanel = lazy(() => import('./components/WordGoal/WordGoalPanel'))
 const SettingsPanel = lazy(() => import('./components/Settings/SettingsPanel'))
 const WritingModes = lazy(() => import('./components/WritingModes/WritingModes'))
 const PluginMarket = lazy(() => import('./components/PluginMarket/PluginMarket'))
+const WritingChart = lazy(() => import('./components/WritingChart/WritingChart'))
+const DocumentTemplates = lazy(() => import('./components/DocumentTemplates/DocumentTemplates'))
+const WritingReminder = lazy(() => import('./components/WritingReminder/WritingReminder'))
+const DocumentShare = lazy(() => import('./components/DocumentShare/DocumentShare'))
+const ClipboardHistory = lazy(() => import('./components/ClipboardHistory/ClipboardHistory'))
+const QuickShortcuts = lazy(() => import('./components/KeyboardShortcutsHelp/QuickShortcuts'))
 
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary'
 
@@ -49,6 +55,12 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [writingModesOpen, setWritingModesOpen] = useState(false)
   const [pluginMarketOpen, setPluginMarketOpen] = useState(false)
+  const [writingChartOpen, setWritingChartOpen] = useState(false)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
+  const [reminderOpen, setReminderOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [clipboardOpen, setClipboardOpen] = useState(false)
+  const [quickShortcutsOpen, setQuickShortcutsOpen] = useState(false)
 
   const getCurrentDoc = useDocumentStore((s) => s.getCurrentDoc)
   const updateDoc = useDocumentStore((s) => s.updateDoc)
@@ -365,6 +377,54 @@ function App() {
           </button>
           <button
             className="text-editor-muted hover:text-editor-text ml-3 text-sm"
+            onClick={() => setWritingChartOpen(true)}
+            title="写作数据"
+            aria-label="写作数据可视化"
+          >
+            📊
+          </button>
+          <button
+            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
+            onClick={() => setTemplatesOpen(true)}
+            title="文档模板"
+            aria-label="文档模板"
+          >
+            📝
+          </button>
+          <button
+            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
+            onClick={() => setReminderOpen(true)}
+            title="写作提醒"
+            aria-label="写作提醒"
+          >
+            🔔
+          </button>
+          <button
+            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
+            onClick={() => setShareOpen(true)}
+            title="分享"
+            aria-label="分享文档"
+          >
+            📤
+          </button>
+          <button
+            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
+            onClick={() => setClipboardOpen(true)}
+            title="剪贴板历史"
+            aria-label="剪贴板历史"
+          >
+            📋
+          </button>
+          <button
+            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
+            onClick={() => setQuickShortcutsOpen(true)}
+            title="快捷键速查"
+            aria-label="快捷键速查"
+          >
+            ⌨️
+          </button>
+          <button
+            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
             onClick={() => setSettingsOpen(true)}
             title="设置"
             aria-label="设置"
@@ -637,6 +697,64 @@ function App() {
         <ErrorBoundary>
           <Suspense fallback={<LoadingFallback />}>
             <PluginMarket onClose={() => setPluginMarketOpen(false)} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {writingChartOpen && (
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingFallback />}>
+            <WritingChart onClose={() => setWritingChartOpen(false)} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {templatesOpen && (
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingFallback />}>
+            <DocumentTemplates
+              onClose={() => setTemplatesOpen(false)}
+              onSelect={(title, content) => {
+                const id = useDocumentStore.getState().addDoc({ title, content, type: 'chapter', parentId: null })
+                useDocumentStore.getState().setCurrentDoc(id)
+                openTab(id, title)
+              }}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {reminderOpen && (
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingFallback />}>
+            <WritingReminder onClose={() => setReminderOpen(false)} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {shareOpen && currentDoc && (
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingFallback />}>
+            <DocumentShare docId={currentDoc.id} onClose={() => setShareOpen(false)} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {clipboardOpen && (
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingFallback />}>
+            <ClipboardHistory
+              onClose={() => setClipboardOpen(false)}
+              onInsert={(text) => editorRef.current?.insertContent(text)}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {quickShortcutsOpen && (
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingFallback />}>
+            <QuickShortcuts onClose={() => setQuickShortcutsOpen(false)} />
           </Suspense>
         </ErrorBoundary>
       )}
