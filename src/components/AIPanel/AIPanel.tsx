@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { aiCompleteStream, AI_COMMANDS, getAIConfig, saveAIConfig, clearAIConfig, getQueueStatus, cancelAllRequests } from '../../services/aiService'
 import type { AIProvider } from '../../services/aiService'
 
@@ -7,13 +7,29 @@ interface Message {
   content: string
 }
 
+const MESSAGES_KEY = 'novel-engine-ai-messages'
+
+function loadMessages(): Message[] {
+  try {
+    const raw = localStorage.getItem(MESSAGES_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveMessagesToStorage(messages: Message[]) {
+  try {
+    const toSave = messages.slice(-50)
+    localStorage.setItem(MESSAGES_KEY, JSON.stringify(toSave))
+  } catch {}
+}
+
 interface AIPanelProps {
   editorContent?: string
   onInsertContent?: (text: string) => void
 }
 
 export default function AIPanel({ editorContent, onInsertContent }: AIPanelProps) {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<Message[]>(loadMessages)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -27,6 +43,10 @@ export default function AIPanel({ editorContent, onInsertContent }: AIPanelProps
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  useEffect(() => {
+    saveMessagesToStorage(messages)
   }, [messages])
 
   useEffect(() => {
@@ -90,9 +110,12 @@ export default function AIPanel({ editorContent, onInsertContent }: AIPanelProps
   }
 
   const handleCommand = (cmd: keyof typeof AI_COMMANDS) => {
-    const selectedText = editorContent || ''
+    const maxLen = 2000
+    const context = (editorContent || '').length > maxLen
+      ? (editorContent || '').slice(0, maxLen) + '\n...(内容已截断)'
+      : editorContent || ''
     const command = AI_COMMANDS[cmd]
-    handleSend(command.buildPrompt(selectedText))
+    handleSend(command.buildPrompt(context))
   }
 
   const handleSaveSettings = () => {
@@ -129,6 +152,15 @@ export default function AIPanel({ editorContent, onInsertContent }: AIPanelProps
           )}
         </div>
         <div className="flex items-center gap-2">
+          {messages.length > 0 && (
+            <button
+              className="text-xs text-editor-muted hover:text-editor-text"
+              onClick={() => { setMessages([]); localStorage.removeItem(MESSAGES_KEY) }}
+              title="清空对话"
+            >
+              🗑️
+            </button>
+          )}
           {(queueStatus.pending > 0 || queueStatus.active > 0) && (
             <button
               className="text-xs text-editor-red hover:text-editor-text"
@@ -219,7 +251,15 @@ export default function AIPanel({ editorContent, onInsertContent }: AIPanelProps
                   : 'bg-editor-surface text-editor-text'
               }`}
             >
-              <p className="whitespace-pre-wrap break-words">{msg.content || (loading && i === messages.length - 1 ? '...' : '')}</p>
+              <p className="whitespace-pre-wrap break-words">
+                {msg.content || (loading && i === messages.length - 1 ? (
+                  <span className="inline-flex gap-1">
+                    <span className="animate-bounce" style={{ animationDelay: '0ms' }}>●</span>
+                    <span className="animate-bounce" style={{ animationDelay: '150ms' }}>●</span>
+                    <span className="animate-bounce" style={{ animationDelay: '300ms' }}>●</span>
+                  </span>
+                ) : '')}
+              </p>
               {msg.role === 'assistant' && msg.content && (
                 <button
                   className="text-xs text-editor-muted mt-1 hover:text-editor-accent"

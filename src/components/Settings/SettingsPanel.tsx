@@ -6,6 +6,7 @@ import { useAutoSaveStore } from '../../store/autoSaveStore'
 import { useCustomThemeStore, DEFAULT_COLORS, DARK_COLORS } from '../../store/customThemeStore'
 import { useShortcutStore } from '../../store/shortcutStore'
 import { getCloudConfig, saveCloudConfig, clearCloudConfig, testConnection, syncToCloud, getSyncStatus } from '../../services/cloudSync'
+import Modal from '../common/Modal'
 import type { ThemeColors } from '../../store/customThemeStore'
 import type { CloudProvider } from '../../services/cloudSync'
 
@@ -168,8 +169,8 @@ export default function SettingsPanel({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-editor-surface border border-editor-border rounded-lg shadow-2xl w-[650px] max-h-[80vh] overflow-hidden flex">
+    <Modal open={true} onClose={onClose} title="设置" size="lg">
+      <div className="flex h-[70vh]">
         <div className="w-32 bg-editor-bg border-r border-editor-border flex flex-col overflow-y-auto">
           {tabs.map((tab) => (
             <button
@@ -435,6 +436,6 @@ export default function SettingsPanel({ onClose }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }

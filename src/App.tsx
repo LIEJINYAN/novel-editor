@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react'
+import { useState, useCallback, useRef, useEffect, lazy, Suspense, useMemo } from 'react'
 import { useDocumentStore } from './store/documentStore'
 import { useThemeStore } from './store/themeStore'
 import { useUIStore } from './store/uiStore'
@@ -9,8 +9,10 @@ import { useWordGoalStore } from './store/wordGoalStore'
 import { useAutoSaveStore } from './store/autoSaveStore'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useAutoSave } from './hooks/useAutoSave'
+import { useClickOutside } from './hooks/useClickOutside'
 import { exportToMarkdown, exportToHTML, exportToPDF, exportToText, exportToDOCX, exportToEPUB } from './utils/export'
 import { t } from './i18n'
+import { ToastProvider } from './components/common/Toast'
 import LanguageSwitcher from './components/LanguageSwitcher/LanguageSwitcher'
 import { WordCountFooter, WordCountPanel } from './components/WordCount/WordCount'
 import DocumentOutline, { DocumentOutlinePanel } from './components/DocumentOutline/DocumentOutline'
@@ -37,8 +39,10 @@ const WritingReminder = lazy(() => import('./components/WritingReminder/WritingR
 const DocumentShare = lazy(() => import('./components/DocumentShare/DocumentShare'))
 const ClipboardHistory = lazy(() => import('./components/ClipboardHistory/ClipboardHistory'))
 const QuickShortcuts = lazy(() => import('./components/KeyboardShortcutsHelp/QuickShortcuts'))
+const MobileToolbar = lazy(() => import('./components/MobileToolbar/MobileToolbar'))
 
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary'
+import { useMobile } from './hooks/useMobile'
 
 import type { EditorRef } from './components/Editor/Editor'
 
@@ -61,6 +65,11 @@ function App() {
   const [shareOpen, setShareOpen] = useState(false)
   const [clipboardOpen, setClipboardOpen] = useState(false)
   const [quickShortcutsOpen, setQuickShortcutsOpen] = useState(false)
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+
+  const { isMobile } = useMobile()
+  const exportMenuRef = useClickOutside(() => setExportMenuOpen(false), exportMenuOpen)
+  const moreMenuRef = useClickOutside(() => setMoreMenuOpen(false), moreMenuOpen)
 
   const getCurrentDoc = useDocumentStore((s) => s.getCurrentDoc)
   const updateDoc = useDocumentStore((s) => s.updateDoc)
@@ -86,6 +95,12 @@ function App() {
     loadSession()
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [loadFromDB, loadSession, theme])
+
+  const handleThemeToggle = useCallback(() => {
+    document.documentElement.classList.add('theme-transition')
+    toggleTheme()
+    setTimeout(() => document.documentElement.classList.remove('theme-transition'), 350)
+  }, [toggleTheme])
 
   useEffect(() => {
     return () => {
@@ -149,6 +164,8 @@ function App() {
     onSave: handleSave,
   })
 
+  const docCount = useDocumentStore((s) => s.documents.length)
+
   const handleTabSelect = useCallback((docId: string) => {
     setCurrentDoc(docId)
   }, [setCurrentDoc])
@@ -182,8 +199,9 @@ function App() {
   )
 
   return (
+    <ToastProvider>
     <div className={`h-full w-full flex flex-col bg-editor-bg ${focusMode ? 'focus-mode' : ''} ${typewriterMode ? 'typewriter-mode' : ''}`}>
-      {!focusMode && (
+      {!focusMode && !isMobile && (
         <header className="h-10 bg-editor-sidebar border-b border-editor-border flex items-center px-4 shrink-0" role="banner">
           <button
             className="text-editor-muted hover:text-editor-text mr-3 text-sm"
@@ -199,11 +217,13 @@ function App() {
             {currentDoc?.title || t('editor.selectDoc')}
             {isDirty && <span className="ml-1 text-yellow-500" aria-label="未保存">●</span>}
           </span>
+
+          {/* File operations group */}
           {currentDoc && (
-            <>
-              <div className="relative">
+            <div className="flex items-center ml-3 border-r border-editor-border pr-3">
+              <div className="relative" ref={exportMenuRef}>
                 <button
-                  className="text-editor-muted hover:text-editor-text ml-3 text-sm"
+                  className="text-editor-muted hover:text-editor-text text-sm"
                   onClick={() => setExportMenuOpen(!exportMenuOpen)}
                   title={t('menu.export')}
                 >
@@ -211,226 +231,73 @@ function App() {
                 </button>
                 {exportMenuOpen && (
                   <div className="absolute top-full right-0 mt-1 bg-editor-surface border border-editor-border rounded shadow-lg z-50 min-w-[140px]">
-                    <button
-                      className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg"
-                      onClick={() => {
-                        if (currentDoc) {
-                          exportToMarkdown(currentDoc.title, currentDoc.content)
-                        }
-                        setExportMenuOpen(false)
-                      }}
-                    >
+                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToMarkdown(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
                       📝 {t('export.markdown')}
                     </button>
-                    <button
-                      className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg"
-                      onClick={() => {
-                        if (currentDoc) {
-                          exportToText(currentDoc.title, currentDoc.content)
-                        }
-                        setExportMenuOpen(false)
-                      }}
-                    >
-                      📄 纯文本 (.txt)
+                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToText(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
+                      📄 {t('export.txt') || '纯文本'}
                     </button>
-                    <button
-                      className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg"
-                      onClick={() => {
-                        if (currentDoc) {
-                          exportToDOCX(currentDoc.title, currentDoc.content)
-                        }
-                        setExportMenuOpen(false)
-                      }}
-                    >
+                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToDOCX(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
                       📋 Word (.docx)
                     </button>
-                    <button
-                      className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg"
-                      onClick={() => {
-                        if (currentDoc) {
-                          exportToHTML(currentDoc.title, currentDoc.content)
-                        }
-                        setExportMenuOpen(false)
-                      }}
-                    >
+                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToHTML(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
                       🌐 {t('export.html')}
                     </button>
-                    <button
-                      className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg"
-                      onClick={() => {
-                        if (currentDoc) {
-                          exportToEPUB(currentDoc.title, currentDoc.content)
-                        }
-                        setExportMenuOpen(false)
-                      }}
-                    >
-                      📚 电子书 (.epub)
+                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToEPUB(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
+                      📚 {t('export.epub') || '电子书'}
                     </button>
                     <div className="border-t border-editor-border" />
-                    <button
-                      className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg"
-                      onClick={() => {
-                        if (currentDoc) {
-                          exportToPDF(currentDoc.title, currentDoc.content)
-                        }
-                        setExportMenuOpen(false)
-                      }}
-                    >
+                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToPDF(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
                       📄 {t('export.pdf')}
                     </button>
                   </div>
                 )}
               </div>
-              <button
-                className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-                onClick={() => setVersionHistoryOpen(true)}
-                title={t('version.title')}
-              >
+              <button className="text-editor-muted hover:text-editor-text ml-2 text-sm" onClick={() => setVersionHistoryOpen(true)} title={t('version.title')}>
                 🕐
               </button>
-            </>
+            </div>
           )}
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setSearchOpen(true)}
-            title={t('menu.search')}
-            aria-label={t('menu.search')}
-          >
-            🔍
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={toggleTheme}
-            title={t('menu.toggleTheme')}
-            aria-label={t('menu.toggleTheme')}
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
-          <LanguageSwitcher />
-          <button
-            className={`text-editor-muted hover:text-editor-text ml-3 text-sm ${focusMode ? 'text-editor-accent' : ''}`}
-            onClick={toggleFocusMode}
-            title="专注模式 (Ctrl+Shift+F)"
-            aria-label="专注模式"
-            aria-pressed={focusMode}
-          >
-            🎯
-          </button>
-          <button
-            className={`text-editor-muted hover:text-editor-text ml-3 text-sm ${typewriterMode ? 'text-editor-accent' : ''}`}
-            onClick={toggleTypewriterMode}
-            title="打字机模式 (Ctrl+Shift+T)"
-            aria-label="打字机模式"
-            aria-pressed={typewriterMode}
-          >
-            ⌨️
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={toggleFullscreen}
-            title="全屏 (F11)"
-            aria-label="全屏模式"
-            aria-expanded={fullscreen}
-          >
-            ⛶
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setWritingStatsOpen(true)}
-            title="写作统计 (Ctrl+Shift+P)"
-            aria-label="写作统计"
-          >
-            📈
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setShortcutsHelpOpen(true)}
-            title="快捷键帮助 (F1)"
-            aria-label="快捷键帮助"
-          >
-            ❓
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setAiPanelOpen(!aiPanelOpen)}
-            title={t('menu.toggleAIPanel')}
-            aria-label={t('menu.toggleAIPanel')}
-            aria-expanded={aiPanelOpen}
-          >
-            🤖
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setWritingModesOpen(true)}
-            title="写作模式"
-            aria-label="写作模式"
-          >
-            ✍️
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setPluginMarketOpen(true)}
-            title="插件市场"
-            aria-label="插件市场"
-          >
-            🧩
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setWritingChartOpen(true)}
-            title="写作数据"
-            aria-label="写作数据可视化"
-          >
-            📊
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setTemplatesOpen(true)}
-            title="文档模板"
-            aria-label="文档模板"
-          >
-            📝
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setReminderOpen(true)}
-            title="写作提醒"
-            aria-label="写作提醒"
-          >
-            🔔
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setShareOpen(true)}
-            title="分享"
-            aria-label="分享文档"
-          >
-            📤
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setClipboardOpen(true)}
-            title="剪贴板历史"
-            aria-label="剪贴板历史"
-          >
-            📋
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setQuickShortcutsOpen(true)}
-            title="快捷键速查"
-            aria-label="快捷键速查"
-          >
-            ⌨️
-          </button>
-          <button
-            className="text-editor-muted hover:text-editor-text ml-3 text-sm"
-            onClick={() => setSettingsOpen(true)}
-            title="设置"
-            aria-label="设置"
-          >
-            ⚙️
-          </button>
+
+          {/* View & mode group */}
+          <div className="flex items-center ml-2 gap-1">
+            <button className="text-editor-muted hover:text-editor-text text-sm" onClick={() => setSearchOpen(true)} title={t('menu.search')} aria-label={t('menu.search')}>🔍</button>
+            <button className="text-editor-muted hover:text-editor-text text-sm" onClick={handleThemeToggle} title={t('menu.toggleTheme')} aria-label={t('menu.toggleTheme')}>
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+            <LanguageSwitcher />
+            <button className={`text-editor-muted hover:text-editor-text text-sm ${focusMode ? 'text-editor-accent' : ''}`} onClick={toggleFocusMode} title="专注模式" aria-label="专注模式" aria-pressed={focusMode}>🎯</button>
+            <button className={`text-editor-muted hover:text-editor-text text-sm ${typewriterMode ? 'text-editor-accent' : ''}`} onClick={toggleTypewriterMode} title="打字机模式" aria-label="打字机模式" aria-pressed={typewriterMode}>⌨️</button>
+            <button className="text-editor-muted hover:text-editor-text text-sm" onClick={toggleFullscreen} title="全屏" aria-label="全屏模式" aria-expanded={fullscreen}>⛶</button>
+          </div>
+
+          {/* AI group */}
+          <div className="flex items-center ml-2 gap-1 border-l border-editor-border pl-2">
+            <button className={`text-editor-muted hover:text-editor-text text-sm ${aiPanelOpen ? 'text-editor-accent' : ''}`} onClick={() => setAiPanelOpen(!aiPanelOpen)} title={t('menu.toggleAIPanel')} aria-label={t('menu.toggleAIPanel')} aria-expanded={aiPanelOpen}>🤖</button>
+          </div>
+
+          {/* Overflow menu */}
+          <div className="flex items-center ml-2 relative" ref={moreMenuRef}>
+            <button className="text-editor-muted hover:text-editor-text text-sm" onClick={() => setMoreMenuOpen(!moreMenuOpen)} title="更多功能" aria-label="更多功能">
+              ⋯
+            </button>
+            {moreMenuOpen && (
+              <div className="absolute top-full right-0 mt-1 bg-editor-surface border border-editor-border rounded shadow-lg z-50 min-w-[160px] max-h-[60vh] overflow-y-auto">
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingStatsOpen(true); setMoreMenuOpen(false) }}>📈 写作统计</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setShortcutsHelpOpen(true); setMoreMenuOpen(false) }}>❓ 快捷键帮助</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingModesOpen(true); setMoreMenuOpen(false) }}>✍️ 写作模式</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setPluginMarketOpen(true); setMoreMenuOpen(false) }}>🧩 插件市场</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingChartOpen(true); setMoreMenuOpen(false) }}>📊 写作数据</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setTemplatesOpen(true); setMoreMenuOpen(false) }}>📝 文档模板</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setReminderOpen(true); setMoreMenuOpen(false) }}>🔔 写作提醒</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setShareOpen(true); setMoreMenuOpen(false) }}>📤 分享</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setClipboardOpen(true); setMoreMenuOpen(false) }}>📋 剪贴板</button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setQuickShortcutsOpen(true); setMoreMenuOpen(false) }}>⌨️ 快捷键速查</button>
+                <div className="border-t border-editor-border" />
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setSettingsOpen(true); setMoreMenuOpen(false) }}>⚙️ 设置</button>
+              </div>
+            )}
+          </div>
         </header>
       )}
 
@@ -442,26 +309,20 @@ function App() {
             <Suspense fallback={<LoadingFallback />}>
               <aside
                 className={`bg-editor-sidebar border-r border-editor-border flex flex-col transition-all duration-200 ${
-                  sidebarOpen ? 'w-60' : 'w-0 overflow-hidden'
+                  sidebarOpen ? (isMobile ? 'fixed inset-y-0 left-0 w-60 z-40 shadow-2xl' : 'w-60') : 'w-0 overflow-hidden'
                 }`}
                 role="complementary"
                 aria-label="侧边栏"
               >
-                <div className="border-b border-editor-border">
+                {isMobile && sidebarOpen && (
+                  <div className="fixed inset-0 bg-black/30 z-30" onClick={() => setSidebarOpen(false)} />
+                )}
+                <div className="border-b border-editor-border relative z-10">
                   <div className="flex items-center justify-between px-3 py-2">
                     <span className="text-xs font-semibold text-editor-muted uppercase tracking-wider">文档大纲</span>
-                    <button
-                      className="text-xs text-editor-muted hover:text-editor-text"
-                      onClick={() => setOutlinePanelOpen(true)}
-                      title="展开大纲面板"
-                    >
-                      ⛶
-                    </button>
+                    <button className="text-xs text-editor-muted hover:text-editor-text" onClick={() => setOutlinePanelOpen(true)} title="展开大纲面板">⛶</button>
                   </div>
-                  <DocumentOutline
-                    editor={editorRef.current?.getEditor() || null}
-                    onNavigate={(_pos: number) => {}}
-                  />
+                  <DocumentOutline editor={editorRef.current?.getEditor() || null} onNavigate={(_pos: number) => {}} />
                 </div>
                 <DocumentTree />
               </aside>
@@ -565,8 +426,8 @@ function App() {
             >
               📑
             </button>
-            <span aria-label={`文档数量: ${useDocumentStore.getState().documents.length}`}>
-              文档数: {useDocumentStore.getState().documents.length}
+            <span aria-label={`文档数量: ${docCount}`}>
+              文档数: {docCount}
             </span>
           </div>
         </footer>
@@ -758,7 +619,22 @@ function App() {
           </Suspense>
         </ErrorBoundary>
       )}
+
+      {isMobile && !focusMode && (
+        <Suspense fallback={null}>
+          <MobileToolbar
+            onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+            onToggleAI={() => setAiPanelOpen(!aiPanelOpen)}
+            onToggleTheme={handleThemeToggle}
+            onSave={handleSave}
+            onSearch={() => setSearchOpen(true)}
+            onUndo={() => editorRef.current?.getEditor()?.chain().focus().undo().run()}
+            onRedo={() => editorRef.current?.getEditor()?.chain().focus().redo().run()}
+          />
+        </Suspense>
+      )}
     </div>
+    </ToastProvider>
   )
 }
 
