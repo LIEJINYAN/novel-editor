@@ -74,6 +74,7 @@ export function useKeyboardShortcuts({
         help: () => onHelp?.(),
         fullscreen: () => onFullscreen?.(),
         exitFocus: () => onExitFocus?.(),
+        toggleAIPanel: () => onToggleAIPanel?.(),
       }
 
       if (matched.id === 'nextTab' || matched.id === 'prevTab') {

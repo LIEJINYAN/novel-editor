@@ -9,8 +9,8 @@ describe('documentStore', () => {
     })
   })
 
-  it('should add a document', () => {
-    const id = useDocumentStore.getState().addDoc({
+  it('should add a document', async () => {
+    const id = await useDocumentStore.getState().addDoc({
       title: '测试章节',
       type: 'chapter',
       content: { type: 'doc', content: [] },
@@ -24,20 +24,20 @@ describe('documentStore', () => {
     expect(id).toBeTruthy()
   })
 
-  it('should remove a document', () => {
-    const id = useDocumentStore.getState().addDoc({
+  it('should remove a document', async () => {
+    const id = await useDocumentStore.getState().addDoc({
       title: '待删除',
       type: 'chapter',
       content: { type: 'doc', content: [] },
       parentId: null,
     })
 
-    useDocumentStore.getState().removeDoc(id)
+    await useDocumentStore.getState().removeDoc(id)
     expect(useDocumentStore.getState().documents).toHaveLength(0)
   })
 
-  it('should update a document', () => {
-    const id = useDocumentStore.getState().addDoc({
+  it('should update a document', async () => {
+    const id = await useDocumentStore.getState().addDoc({
       title: '原标题',
       type: 'chapter',
       content: { type: 'doc', content: [] },
@@ -50,8 +50,8 @@ describe('documentStore', () => {
     expect(doc.title).toBe('新标题')
   })
 
-  it('should set current document', () => {
-    const id = useDocumentStore.getState().addDoc({
+  it('should set current document', async () => {
+    const id = await useDocumentStore.getState().addDoc({
       title: '当前文档',
       type: 'chapter',
       content: { type: 'doc', content: [] },
@@ -71,16 +71,16 @@ describe('documentStore', () => {
     expect(current).toBeUndefined()
   })
 
-  it('should handle multiple documents', () => {
-    useDocumentStore.getState().addDoc({ title: '文档1', type: 'chapter', content: { type: 'doc', content: [] }, parentId: null })
-    useDocumentStore.getState().addDoc({ title: '文档2', type: 'character', content: { type: 'doc', content: [] }, parentId: null })
-    useDocumentStore.getState().addDoc({ title: '文档3', type: 'scene', content: { type: 'doc', content: [] }, parentId: null })
+  it('should handle multiple documents', async () => {
+    await useDocumentStore.getState().addDoc({ title: '文档1', type: 'chapter', content: { type: 'doc', content: [] }, parentId: null })
+    await useDocumentStore.getState().addDoc({ title: '文档2', type: 'character', content: { type: 'doc', content: [] }, parentId: null })
+    await useDocumentStore.getState().addDoc({ title: '文档3', type: 'scene', content: { type: 'doc', content: [] }, parentId: null })
 
     expect(useDocumentStore.getState().documents).toHaveLength(3)
   })
 
-  it('should create a version', () => {
-    const id = useDocumentStore.getState().addDoc({
+  it('should create a version', async () => {
+    const id = await useDocumentStore.getState().addDoc({
       title: '版本测试',
       type: 'chapter',
       content: { type: 'doc', content: [{ type: 'text', text: '原始内容' }] },
@@ -94,8 +94,8 @@ describe('documentStore', () => {
     expect(doc.versions![0].title).toBe('版本测试')
   })
 
-  it('should restore a version', () => {
-    const id = useDocumentStore.getState().addDoc({
+  it('should restore a version', async () => {
+    const id = await useDocumentStore.getState().addDoc({
       title: '恢复测试',
       type: 'chapter',
       content: { type: 'doc', content: [{ type: 'text', text: '原始内容' }] },
@@ -112,8 +112,8 @@ describe('documentStore', () => {
     expect(doc.title).toBe('恢复测试')
   })
 
-  it('should get versions for a document', () => {
-    const id = useDocumentStore.getState().addDoc({
+  it('should get versions for a document', async () => {
+    const id = await useDocumentStore.getState().addDoc({
       title: '获取版本测试',
       type: 'chapter',
       content: { type: 'doc', content: [] },

@@ -6,51 +6,52 @@ import { useTabStore } from './store/tabStore'
 import { useWritingStatsStore } from './store/writingStatsStore'
 import { useDocumentCacheStore } from './store/documentCacheStore'
 import { useWordGoalStore } from './store/wordGoalStore'
-import { useAutoSaveStore } from './store/autoSaveStore'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useAutoSave } from './hooks/useAutoSave'
-import { useClickOutside } from './hooks/useClickOutside'
-import { exportToMarkdown, exportToHTML, exportToPDF, exportToText, exportToDOCX, exportToEPUB } from './utils/export'
-import { t } from './i18n'
-import { ToastProvider } from './components/common/Toast'
-import LanguageSwitcher from './components/LanguageSwitcher/LanguageSwitcher'
-import { WordCountFooter, WordCountPanel } from './components/WordCount/WordCount'
-import DocumentOutline, { DocumentOutlinePanel } from './components/DocumentOutline/DocumentOutline'
+import { useDragAndDrop } from './hooks/useDragAndDrop'
+import { t, initLocale } from './i18n'
+import { ToastProvider, useToast } from './components/common/Toast'
+import { setToastCallback } from './utils/toast'
 import TabBar from './components/TabBar/TabBar'
-import WritingStatsPanel from './components/WritingStats/WritingStatsPanel'
-import WordGoalFooter from './components/WordGoal/WordGoalFooter'
-
-const EditorComponent = lazy(() => import('./components/Editor/Editor'))
-const DocumentTree = lazy(() => import('./components/Sidebar/DocumentTree'))
-const AIPanel = lazy(() => import('./components/AIPanel/AIPanel'))
-const VersionHistory = lazy(() => import('./components/VersionHistory/VersionHistory'))
-const SearchPanel = lazy(() => import('./components/Search/SearchPanel'))
-const KeyboardShortcutsHelp = lazy(() => import('./components/KeyboardShortcutsHelp/KeyboardShortcutsHelp'))
-const FindReplace = lazy(() => import('./components/FindReplace/FindReplace'))
-const FocusModeToolbar = lazy(() => import('./components/FocusMode/FocusModeToolbar'))
-const FocusContextMenu = lazy(() => import('./components/FocusMode/FocusContextMenu'))
-const WordGoalPanel = lazy(() => import('./components/WordGoal/WordGoalPanel'))
-const SettingsPanel = lazy(() => import('./components/Settings/SettingsPanel'))
-const WritingModes = lazy(() => import('./components/WritingModes/WritingModes'))
-const PluginMarket = lazy(() => import('./components/PluginMarket/PluginMarket'))
-const WritingChart = lazy(() => import('./components/WritingChart/WritingChart'))
-const DocumentTemplates = lazy(() => import('./components/DocumentTemplates/DocumentTemplates'))
-const WritingReminder = lazy(() => import('./components/WritingReminder/WritingReminder'))
-const DocumentShare = lazy(() => import('./components/DocumentShare/DocumentShare'))
-const ClipboardHistory = lazy(() => import('./components/ClipboardHistory/ClipboardHistory'))
-const QuickShortcuts = lazy(() => import('./components/KeyboardShortcutsHelp/QuickShortcuts'))
-const MobileToolbar = lazy(() => import('./components/MobileToolbar/MobileToolbar'))
-const CommandPalette = lazy(() => import('./components/CommandPalette/CommandPalette'))
-
+import ContextMenu, { useContextMenu } from './components/ContextMenu/ContextMenu'
+import { EditorSkeleton } from './components/common/Skeleton'
+import AppHeader from './components/AppHeader/AppHeader'
+import AppSidebar from './components/AppSidebar/AppSidebar'
+import AIPanelWrapper from './components/AIPanelWrapper/AIPanelWrapper'
+import AppFooter from './components/AppFooter/AppFooter'
+import ModalPanels from './components/ModalPanels/ModalPanels'
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary'
 import { useMobile } from './hooks/useMobile'
 
 import type { EditorRef } from './components/Editor/Editor'
 import type { Command } from './components/CommandPalette/CommandPalette'
 
+interface TiptapContent {
+  content?: Array<{
+    content?: Array<{ text?: string }>
+  }>
+}
+
+const EditorComponent = lazy(() => import('./components/Editor/Editor'))
+const FocusModeToolbar = lazy(() => import('./components/FocusMode/FocusModeToolbar'))
+const FocusContextMenu = lazy(() => import('./components/FocusMode/FocusContextMenu'))
+const MobileToolbar = lazy(() => import('./components/MobileToolbar/MobileToolbar'))
+const CommandPalette = lazy(() => import('./components/CommandPalette/CommandPalette'))
+
+function ToastSetup() {
+  const { showToast } = useToast()
+
+  useEffect(() => {
+    setToastCallback(({ message, type, duration }) => {
+      showToast(message, type, duration)
+    })
+  }, [showToast])
+
+  return null
+}
+
 function App() {
   const [versionHistoryOpen, setVersionHistoryOpen] = useState(false)
-  const [exportMenuOpen, setExportMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false)
   const [findReplaceOpen, setFindReplaceOpen] = useState(false)
@@ -67,14 +68,11 @@ function App() {
   const [shareOpen, setShareOpen] = useState(false)
   const [clipboardOpen, setClipboardOpen] = useState(false)
   const [quickShortcutsOpen, setQuickShortcutsOpen] = useState(false)
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
 
   const { isMobile } = useMobile()
-  const exportMenuRef = useClickOutside(() => setExportMenuOpen(false), exportMenuOpen)
-  const moreMenuRef = useClickOutside(() => setMoreMenuOpen(false), moreMenuOpen)
+  const { contextMenu, showContextMenu, hideContextMenu } = useContextMenu()
 
-  const getCurrentDoc = useDocumentStore((s) => s.getCurrentDoc)
   const updateDoc = useDocumentStore((s) => s.updateDoc)
   const loadFromDB = useDocumentStore((s) => s.loadFromDB)
   const setCurrentDoc = useDocumentStore((s) => s.setCurrentDoc)
@@ -83,21 +81,52 @@ function App() {
   const markDirty = useDocumentStore((s) => s.markDirty)
   const saveToDB = useDocumentStore((s) => s.saveToDB)
 
-  const { theme, toggleTheme } = useThemeStore()
+  const { toggleTheme } = useThemeStore()
   const { focusMode, typewriterMode, fullscreen, toggleFocusMode, toggleTypewriterMode, toggleFullscreen, sidebarOpen, setSidebarOpen, aiPanelOpen, setAiPanelOpen } = useUIStore()
-  const { openTab, setActiveTab, activeTabId, loadSession, saveSession } = useTabStore()
+  const { openTab, loadSession, saveSession } = useTabStore()
   const { startSession, endSession, updateWordCount } = useWritingStatsStore()
-  const { loadDocument, unloadDocument } = useDocumentCacheStore()
   const { addWordCount } = useWordGoalStore()
 
   const editorRef = useRef<EditorRef>(null)
-  const currentDoc = getCurrentDoc()
+  const currentDocId = useDocumentStore((s) => s.currentDocId)
+  const documents = useDocumentStore((s) => s.documents)
+  const currentDoc = documents.find((d) => d.id === currentDocId)
+  const [editorSelection, setEditorSelection] = useState('')
 
   useEffect(() => {
+    initLocale()
     loadFromDB()
     loadSession()
-    document.documentElement.classList.toggle('dark', theme === 'dark')
-  }, [loadFromDB, loadSession, theme])
+    document.documentElement.classList.toggle('dark', useThemeStore.getState().theme === 'dark')
+
+    // Tauri: auto-update check & deep link listener
+    async function setupTauri() {
+      if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+        try {
+          const tauri = await import('./services/tauriService')
+
+          // Check for updates on startup (delayed 5s)
+          setTimeout(async () => {
+            const result = await tauri.checkForUpdates()
+            if (result.available) {
+              tauri.notify('NovelEngine Editor', `新版本 ${result.version} 可用`)
+            }
+          }, 5000)
+
+          // Listen for deep link (novelengine:// protocol)
+          await tauri.onDeepLink((urls) => {
+            for (const url of urls) {
+              if (url.startsWith('novelengine://open/')) {
+                const filePath = decodeURIComponent(url.replace('novelengine://open/', ''))
+                // File opened via protocol - handled by import
+              }
+            }
+          })
+        } catch { /* not in Tauri */ }
+      }
+    }
+    setupTauri()
+  }, [loadFromDB, loadSession])
 
   const handleThemeToggle = useCallback(() => {
     document.documentElement.classList.add('theme-transition')
@@ -135,9 +164,10 @@ function App() {
       if (currentDoc) {
         updateDoc(currentDoc.id, { content })
         markDirty()
-        const text = (content as any)?.content?.reduce((acc: string, block: any) => {
+        const tiptapContent = content as TiptapContent
+        const text = tiptapContent?.content?.reduce((acc: string, block) => {
           if (block.content) {
-            return acc + block.content.map((c: any) => c.text || '').join('')
+            return acc + block.content.map((c) => c.text || '').join('')
           }
           return acc
         }, '') || ''
@@ -161,7 +191,7 @@ function App() {
     useDocumentStore.getState().markClean()
   }, [saveToDB])
 
-  const { save: autoSave, isSaving, lastSaved } = useAutoSave({
+  const { isSaving, lastSaved } = useAutoSave({
     docId: currentDoc?.id || null,
     content: currentDoc?.content || null,
     onSave: handleSave,
@@ -169,9 +199,17 @@ function App() {
 
   const docCount = useDocumentStore((s) => s.documents.length)
 
-  const handleTabSelect = useCallback((docId: string) => {
+  const handleTabSelect = useCallback((docId: string | null) => {
     setCurrentDoc(docId)
   }, [setCurrentDoc])
+
+  const handleSidebarSelect = useCallback((docId: string) => {
+    setCurrentDoc(docId)
+    const doc = documents.find((d) => d.id === docId)
+    if (doc) {
+      openTab(docId, doc.title)
+    }
+  }, [setCurrentDoc, documents, openTab])
 
   useKeyboardShortcuts({
     onSave: handleSave,
@@ -180,6 +218,8 @@ function App() {
     onSearch: () => setSearchOpen(true),
     onHelp: () => setShortcutsHelpOpen(true),
     onFindReplace: () => setFindReplaceOpen(true),
+    onUndo: () => editorRef.current?.getEditor()?.chain().focus().undo().run(),
+    onRedo: () => editorRef.current?.getEditor()?.chain().focus().redo().run(),
     onWordCount: () => setWordCountOpen(true),
     onOutline: () => setOutlinePanelOpen(true),
     onFocusMode: toggleFocusMode,
@@ -199,9 +239,9 @@ function App() {
     { id: 'new-doc', label: t('menu.newDoc'), icon: '📄', category: '文件', shortcut: 'Ctrl+N', action: () => {} },
     { id: 'search', label: t('menu.search'), icon: '🔍', category: '编辑', shortcut: 'Ctrl+F', action: () => setSearchOpen(true) },
     { id: 'find-replace', label: t('editor.findReplace'), icon: '🔎', category: '编辑', shortcut: 'Ctrl+H', action: () => setFindReplaceOpen(true) },
-    { id: 'toggle-sidebar', label: t('menu.toggleSidebar'), icon: '☰', category: '视图', shortcut: 'Ctrl+B', action: () => setSidebarOpen(!sidebarOpen) },
+    { id: 'toggle-sidebar', label: t('menu.toggleSidebar'), icon: '☰', category: '视图', action: () => setSidebarOpen(!sidebarOpen) },
     { id: 'toggle-ai', label: t('menu.toggleAIPanel'), icon: '🤖', category: '视图', shortcut: 'Ctrl+Shift+A', action: () => setAiPanelOpen(!aiPanelOpen) },
-    { id: 'toggle-theme', label: t('menu.toggleTheme'), icon: theme === 'dark' ? '☀️' : '🌙', category: '视图', action: toggleTheme },
+    { id: 'toggle-theme', label: t('menu.toggleTheme'), icon: useThemeStore.getState().theme === 'dark' ? '☀️' : '🌙', category: '视图', action: toggleTheme },
     { id: 'focus-mode', label: t('editor.focusMode'), icon: '🎯', category: '视图', action: toggleFocusMode },
     { id: 'typewriter', label: t('editor.typewriter'), icon: '⌨️', category: '视图', action: toggleTypewriterMode },
     { id: 'fullscreen', label: '全屏', icon: '⛶', category: '视图', shortcut: 'F11', action: toggleFullscreen },
@@ -219,160 +259,120 @@ function App() {
     { id: 'clipboard', label: t('editor.clipboardHistory'), icon: '📋', category: '工具', action: () => setClipboardOpen(true) },
     { id: 'version-history', label: t('editor.versionHistory'), icon: '🕐', category: '工具', action: () => setVersionHistoryOpen(true) },
     { id: 'share', label: t('editor.documentShare'), icon: '📤', category: '工具', action: () => setShareOpen(true) },
-  ], [handleSave, sidebarOpen, aiPanelOpen, theme, toggleTheme, toggleFocusMode, toggleTypewriterMode, toggleFullscreen, setSidebarOpen, setAiPanelOpen])
+  ], [handleSave, sidebarOpen, aiPanelOpen, toggleTheme, toggleFocusMode, toggleTypewriterMode, toggleFullscreen, setSidebarOpen, setAiPanelOpen])
 
   const LoadingFallback = () => (
     <div className="flex-1 flex items-center justify-center text-editor-muted">
-      <div className="text-center">
-        <p className="text-lg mb-2">⏳ {t('app.loading')}</p>
+      <div className="text-center animate-pulse">
+        <div className="w-12 h-12 mx-auto mb-4 bg-editor-surface rounded-full" />
+        <p className="text-sm text-editor-muted">{t('app.loading')}</p>
       </div>
     </div>
   )
 
+  const handleFileDrop = useCallback(async (files: Array<{ name: string; content: string; type: string }>) => {
+    for (const file of files) {
+      const ext = file.name.split('.').pop()?.toLowerCase()
+      const title = file.name.replace(/\.[^/.]+$/, '')
+      const { importFile } = await import('./utils/importFile')
+
+      if (ext === 'json') {
+        try {
+          const data = JSON.parse(file.content)
+          if (data.content && data.content.type === 'doc') {
+            useDocumentStore.getState().addDoc({
+              title: data.title || title,
+              type: 'chapter',
+              content: data.content,
+              parentId: null,
+            })
+            continue
+          }
+        } catch {
+          // not valid JSON, treat as plain text
+        }
+      }
+
+      const blob = new Blob([file.content], { type: 'text/plain' })
+      const fakeFile = new File([blob], file.name, { type: file.type })
+      const doc = await importFile(fakeFile)
+      if (doc) {
+        useDocumentStore.getState().addDoc(doc)
+      }
+    }
+  }, [])
+
+  const { isDragging } = useDragAndDrop({ onImport: handleFileDrop })
+
   return (
     <ToastProvider>
-    <div className={`h-full w-full flex flex-col bg-editor-bg ${focusMode ? 'focus-mode' : ''} ${typewriterMode ? 'typewriter-mode' : ''}`}>
+    <ToastSetup />
+    <div
+      className={`h-full w-full flex flex-col bg-editor-bg ${focusMode ? 'focus-mode' : ''} ${typewriterMode ? 'typewriter-mode' : ''} ${isDragging ? 'relative' : ''}`}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-editor-accent/10 border-2 border-dashed border-editor-accent flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <p className="text-lg font-semibold text-editor-accent">📂 拖放文件导入</p>
+            <p className="text-sm text-editor-muted mt-1">支持 .txt, .md, .json 格式</p>
+          </div>
+        </div>
+      )}
+
+      {contextMenu.visible && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenu.items}
+          onClose={hideContextMenu}
+        />
+      )}
+
       {!focusMode && !isMobile && (
-        <header className="h-10 bg-editor-sidebar border-b border-editor-border flex items-center px-4 shrink-0" role="banner">
-          <button
-            className="text-editor-muted hover:text-editor-text mr-3 text-sm"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            title={t('menu.toggleSidebar')}
-            aria-label={t('menu.toggleSidebar')}
-            aria-expanded={sidebarOpen}
-          >
-            ☰
-          </button>
-          <h1 className="text-sm font-semibold text-editor-accent">{t('app.title')}</h1>
-          <span className="ml-auto text-xs text-editor-muted" aria-live="polite">
-            {currentDoc?.title || t('editor.selectDoc')}
-            {isDirty && <span className="ml-1 text-yellow-500" aria-label="未保存">●</span>}
-          </span>
-
-          {/* File operations group */}
-          {currentDoc && (
-            <div className="flex items-center ml-3 border-r border-editor-border pr-3">
-              <div className="relative" ref={exportMenuRef}>
-                <button
-                  className="text-editor-muted hover:text-editor-text text-sm"
-                  onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                  title={t('menu.export')}
-                >
-                  📥
-                </button>
-                {exportMenuOpen && (
-                  <div className="absolute top-full right-0 mt-1 bg-editor-surface border border-editor-border rounded shadow-lg z-50 min-w-[140px]">
-                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToMarkdown(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
-                      📝 {t('export.markdown')}
-                    </button>
-                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToText(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
-                      📄 {t('export.txt') || '纯文本'}
-                    </button>
-                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToDOCX(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
-                      📋 Word (.docx)
-                    </button>
-                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToHTML(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
-                      🌐 {t('export.html')}
-                    </button>
-                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToEPUB(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
-                      📚 {t('export.epub') || '电子书'}
-                    </button>
-                    <div className="border-t border-editor-border" />
-                    <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToPDF(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }}>
-                      📄 {t('export.pdf')}
-                    </button>
-                  </div>
-                )}
-              </div>
-              <button className="text-editor-muted hover:text-editor-text ml-2 text-sm" onClick={() => setVersionHistoryOpen(true)} title={t('version.title')}>
-                🕐
-              </button>
-            </div>
-          )}
-
-          {/* View & mode group */}
-          <div className="flex items-center ml-2 gap-1">
-            <button className="text-editor-muted hover:text-editor-text text-sm" onClick={() => setSearchOpen(true)} title={t('menu.search')} aria-label={t('menu.search')}>🔍</button>
-            <button className="text-editor-muted hover:text-editor-text text-sm" onClick={handleThemeToggle} title={t('menu.toggleTheme')} aria-label={t('menu.toggleTheme')}>
-              {theme === 'dark' ? '☀️' : '🌙'}
-            </button>
-            <LanguageSwitcher />
-            <button className={`text-editor-muted hover:text-editor-text text-sm ${focusMode ? 'text-editor-accent' : ''}`} onClick={toggleFocusMode} title={t('editor.focusMode')} aria-label={t('editor.focusMode')} aria-pressed={focusMode}>🎯</button>
-            <button className={`text-editor-muted hover:text-editor-text text-sm ${typewriterMode ? 'text-editor-accent' : ''}`} onClick={toggleTypewriterMode} title={t('editor.typewriter')} aria-label={t('editor.typewriter')} aria-pressed={typewriterMode}>⌨️</button>
-            <button className="text-editor-muted hover:text-editor-text text-sm" onClick={toggleFullscreen} title="全屏" aria-label="全屏模式" aria-expanded={fullscreen}>⛶</button>
-          </div>
-
-          {/* AI group */}
-          <div className="flex items-center ml-2 gap-1 border-l border-editor-border pl-2">
-            <button className={`text-editor-muted hover:text-editor-text text-sm ${aiPanelOpen ? 'text-editor-accent' : ''}`} onClick={() => setAiPanelOpen(!aiPanelOpen)} title={t('menu.toggleAIPanel')} aria-label={t('menu.toggleAIPanel')} aria-expanded={aiPanelOpen}>🤖</button>
-          </div>
-
-          {/* Overflow menu */}
-          <div className="flex items-center ml-2 relative" ref={moreMenuRef}>
-            <button className="text-editor-muted hover:text-editor-text text-sm" onClick={() => setMoreMenuOpen(!moreMenuOpen)} title={t('menu.overflow')} aria-label={t('menu.overflow')}>
-              ⋯
-            </button>
-            {moreMenuOpen && (
-              <div className="absolute top-full right-0 mt-1 bg-editor-surface border border-editor-border rounded shadow-lg z-50 min-w-[160px] max-h-[60vh] overflow-y-auto">
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingStatsOpen(true); setMoreMenuOpen(false) }}>📈 {t('editor.writingStats')}</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setShortcutsHelpOpen(true); setMoreMenuOpen(false) }}>❓ {t('editor.shortcutsHelp')}</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingModesOpen(true); setMoreMenuOpen(false) }}>✍️ {t('editor.writingModes')}</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setPluginMarketOpen(true); setMoreMenuOpen(false) }}>🧩 {t('editor.pluginMarket')}</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setWritingChartOpen(true); setMoreMenuOpen(false) }}>📊 {t('editor.writingChart')}</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setTemplatesOpen(true); setMoreMenuOpen(false) }}>📝 {t('editor.documentTemplates')}</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setReminderOpen(true); setMoreMenuOpen(false) }}>🔔 {t('editor.writingReminder')}</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setShareOpen(true); setMoreMenuOpen(false) }}>📤 {t('editor.documentShare')}</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setClipboardOpen(true); setMoreMenuOpen(false) }}>📋 {t('editor.clipboardHistory')}</button>
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setQuickShortcutsOpen(true); setMoreMenuOpen(false) }}>⌨️ 快捷键速查</button>
-                <div className="border-t border-editor-border" />
-                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { setSettingsOpen(true); setMoreMenuOpen(false) }}>⚙️ {t('settings.title')}</button>
-              </div>
-            )}
-          </div>
-        </header>
+        <AppHeader
+          currentDoc={currentDoc}
+          isDirty={isDirty}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          onToggleTheme={handleThemeToggle}
+          onSearch={() => setSearchOpen(true)}
+          onVersionHistory={() => setVersionHistoryOpen(true)}
+          onWritingStats={() => setWritingStatsOpen(true)}
+          onShortcutsHelp={() => setShortcutsHelpOpen(true)}
+          onWritingModes={() => setWritingModesOpen(true)}
+          onPluginMarket={() => setPluginMarketOpen(true)}
+          onWritingChart={() => setWritingChartOpen(true)}
+          onTemplates={() => setTemplatesOpen(true)}
+          onReminder={() => setReminderOpen(true)}
+          onShare={() => setShareOpen(true)}
+          onClipboard={() => setClipboardOpen(true)}
+          onQuickShortcuts={() => setQuickShortcutsOpen(true)}
+          onSettings={() => setSettingsOpen(true)}
+        />
       )}
 
       <TabBar onTabSelect={handleTabSelect} />
 
       <div className="flex-1 flex overflow-hidden">
         {!focusMode && (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingFallback />}>
-              <aside
-                className={`bg-editor-sidebar border-r border-editor-border flex flex-col transition-all duration-200 ${
-                  sidebarOpen ? (isMobile ? 'fixed inset-y-0 left-0 w-60 z-40 shadow-2xl' : 'w-60') : 'w-0 overflow-hidden'
-                }`}
-                role="complementary"
-                aria-label="侧边栏"
-              >
-                {isMobile && sidebarOpen && (
-                  <div className="fixed inset-0 bg-black/30 z-30" onClick={() => setSidebarOpen(false)} />
-                )}
-                <div className="border-b border-editor-border relative z-10">
-                  <div className="flex items-center justify-between px-3 py-2">
-                    <span className="text-xs font-semibold text-editor-muted uppercase tracking-wider">{t('sidebar.documentTree')}</span>
-                    <button className="text-xs text-editor-muted hover:text-editor-text" onClick={() => setOutlinePanelOpen(true)} title="展开大纲面板">⛶</button>
-                  </div>
-                  <DocumentOutline editor={editorRef.current?.getEditor() || null} onNavigate={(_pos: number) => {}} />
-                </div>
-                <DocumentTree />
-              </aside>
-            </Suspense>
-          </ErrorBoundary>
+          <AppSidebar
+            editor={editorRef.current?.getEditor() || null}
+            onOutlinePanelOpen={() => setOutlinePanelOpen(true)}
+          />
         )}
 
         <main className="flex-1 flex flex-col min-w-0" role="main" aria-label="编辑器">
           {!isLoaded ? (
-            <LoadingFallback />
+            <EditorSkeleton />
           ) : currentDoc ? (
             <ErrorBoundary>
-              <Suspense fallback={<LoadingFallback />}>
+              <Suspense fallback={<EditorSkeleton />}>
                 <EditorComponent
                   ref={editorRef}
                   key={currentDoc.id}
                   docId={currentDoc.id}
                   initialContent={currentDoc.content}
                   onChange={handleContentChange}
+                  onSelectionChange={setEditorSelection}
                   editorContent={JSON.stringify(currentDoc.content)}
                 />
               </Suspense>
@@ -388,151 +388,105 @@ function App() {
         </main>
 
         {!focusMode && (
-          <ErrorBoundary>
-            <Suspense fallback={<LoadingFallback />}>
-              <aside
-                className={`bg-editor-sidebar border-l border-editor-border flex flex-col transition-all duration-200 ${
-                  aiPanelOpen ? 'w-72' : 'w-0 overflow-hidden'
-                }`}
-              >
-                <AIPanel
-                  editorContent={currentDoc ? JSON.stringify(currentDoc.content) : ''}
-                  onInsertContent={handleAiInsert}
-                />
-              </aside>
-            </Suspense>
-          </ErrorBoundary>
+          <AIPanelWrapper
+            editorContent={currentDoc ? JSON.stringify(currentDoc.content) : ''}
+            editorTitle={currentDoc?.title || ''}
+            editorDocId={currentDoc?.id || ''}
+            selection={editorSelection}
+            onInsertContent={handleAiInsert}
+            onReplaceContent={(text) => {
+              const editor = editorRef.current?.getEditor()
+              if (editor) {
+                editor.chain().focus().deleteSelection().insertContent(text).run()
+              }
+            }}
+            onFormatText={(format, value) => {
+              const editor = editorRef.current?.getEditor()
+              if (!editor) return
+              
+              switch (format) {
+                case 'bold':
+                  editor.chain().focus().toggleBold().run()
+                  break
+                case 'italic':
+                  editor.chain().focus().toggleItalic().run()
+                  break
+                case 'underline':
+                  editor.chain().focus().toggleUnderline().run()
+                  break
+                case 'strike':
+                  editor.chain().focus().toggleStrike().run()
+                  break
+                case 'heading1':
+                  editor.chain().focus().toggleHeading({ level: 1 }).run()
+                  break
+                case 'heading2':
+                  editor.chain().focus().toggleHeading({ level: 2 }).run()
+                  break
+                case 'heading3':
+                  editor.chain().focus().toggleHeading({ level: 3 }).run()
+                  break
+                case 'bulletList':
+                  editor.chain().focus().toggleBulletList().run()
+                  break
+                case 'orderedList':
+                  editor.chain().focus().toggleOrderedList().run()
+                  break
+                case 'blockquote':
+                  editor.chain().focus().toggleBlockquote().run()
+                  break
+                case 'codeBlock':
+                  editor.chain().focus().toggleCodeBlock().run()
+                  break
+                case 'highlight':
+                  editor.chain().focus().toggleHighlight().run()
+                  break
+                case 'clear':
+                  editor.chain().focus().clearNodes().unsetAllMarks().run()
+                  break
+              }
+            }}
+            onReplaceInDocument={(find, replace, replaceAll) => {
+              const editor = editorRef.current?.getEditor()
+              if (!editor) return
+              
+              const content = editor.getText()
+              const regex = new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), replaceAll ? 'gi' : 'i')
+              const newContent = content.replace(regex, replace)
+              
+              editor.commands.setContent({
+                type: 'doc',
+                content: [{ type: 'paragraph', content: [{ type: 'text', text: newContent }] }],
+              })
+            }}
+            onCreateCodeBlock={(language, code) => {
+              const editor = editorRef.current?.getEditor()
+              if (!editor) return
+              
+              editor.chain().focus().setMonacoCodeBlock({ language, code }).run()
+            }}
+            onUndo={() => {
+              const editor = editorRef.current?.getEditor()
+              editor?.chain().focus().undo().run()
+            }}
+            onRedo={() => {
+              const editor = editorRef.current?.getEditor()
+              editor?.chain().focus().redo().run()
+            }}
+          />
         )}
       </div>
 
       {!focusMode && (
-        <footer className="h-6 bg-editor-sidebar border-t border-editor-border flex items-center px-3 text-xs text-editor-muted shrink-0" role="contentinfo" aria-label="状态栏">
-          <span>{isLoaded ? t('app.ready') : t('app.loading')}</span>
-          <span className="ml-4">
-            <WordCountFooter editor={editorRef.current?.getEditor() || null} />
-          </span>
-          <span className="ml-4">
-            <WordGoalFooter />
-          </span>
-          {isSaving && (
-            <span className="ml-4 text-yellow-500" aria-live="polite">
-              ⏳ {t('app.loading')}
-            </span>
-          )}
-          {lastSaved && !isSaving && (
-            <span className="ml-4 text-editor-muted" aria-live="polite">
-              {new Date(lastSaved).toLocaleTimeString()}
-            </span>
-          )}
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              className="hover:text-editor-text"
-              onClick={() => setFindReplaceOpen(true)}
-              title={t('editor.findReplace')}
-              aria-label={t('editor.findReplace')}
-            >
-              🔎
-            </button>
-            <button
-              className="hover:text-editor-text"
-              onClick={() => setWordCountOpen(true)}
-              title={t('editor.writingStats')}
-              aria-label={t('editor.writingStats')}
-            >
-              📊
-            </button>
-            <button
-              className="hover:text-editor-text"
-              onClick={() => setWordGoalOpen(true)}
-              title={t('editor.wordGoal')}
-              aria-label={t('editor.wordGoal')}
-            >
-              🎯
-            </button>
-            <button
-              className="hover:text-editor-text"
-              onClick={() => setOutlinePanelOpen(true)}
-              title={t('editor.outline')}
-              aria-label={t('editor.outline')}
-            >
-              📑
-            </button>
-            <span aria-label={`文档数量: ${docCount}`}>
-              {docCount}
-            </span>
-          </div>
-        </footer>
-      )}
-
-      {versionHistoryOpen && currentDoc && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <VersionHistory
-              docId={currentDoc.id}
-              onClose={() => setVersionHistoryOpen(false)}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {searchOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <SearchPanel
-              onNavigate={(docId) => setCurrentDoc(docId)}
-              onClose={() => setSearchOpen(false)}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {shortcutsHelpOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <KeyboardShortcutsHelp onClose={() => setShortcutsHelpOpen(false)} />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {findReplaceOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <FindReplace
-              editor={editorRef.current?.getEditor() || null}
-              onClose={() => setFindReplaceOpen(false)}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {wordCountOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <WordCountPanel
-              editor={editorRef.current?.getEditor() || null}
-              onClose={() => setWordCountOpen(false)}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {outlinePanelOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <DocumentOutlinePanel
-              editor={editorRef.current?.getEditor() || null}
-              onClose={() => setOutlinePanelOpen(false)}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {writingStatsOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <WritingStatsPanel onClose={() => setWritingStatsOpen(false)} />
-          </Suspense>
-        </ErrorBoundary>
+        <AppFooter
+          isLoaded={isLoaded}
+          editor={editorRef.current?.getEditor() || null}
+          docCount={docCount}
+          onFindReplace={() => setFindReplaceOpen(true)}
+          onWordCount={() => setWordCountOpen(true)}
+          onWordGoal={() => setWordGoalOpen(true)}
+          onOutline={() => setOutlinePanelOpen(true)}
+        />
       )}
 
       {focusMode && currentDoc && (
@@ -561,95 +515,49 @@ function App() {
         </ErrorBoundary>
       )}
 
-      {wordGoalOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <WordGoalPanel onClose={() => setWordGoalOpen(false)} />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {settingsOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <SettingsPanel onClose={() => setSettingsOpen(false)} />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {writingModesOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <WritingModes onClose={() => setWritingModesOpen(false)} />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {pluginMarketOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <PluginMarket onClose={() => setPluginMarketOpen(false)} />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {writingChartOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <WritingChart onClose={() => setWritingChartOpen(false)} />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {templatesOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <DocumentTemplates
-              onClose={() => setTemplatesOpen(false)}
-              onSelect={(title, content) => {
-                const id = useDocumentStore.getState().addDoc({ title, content, type: 'chapter', parentId: null })
-                useDocumentStore.getState().setCurrentDoc(id)
-                openTab(id, title)
-              }}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {reminderOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <WritingReminder onClose={() => setReminderOpen(false)} />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {shareOpen && currentDoc && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <DocumentShare docId={currentDoc.id} onClose={() => setShareOpen(false)} />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {clipboardOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <ClipboardHistory
-              onClose={() => setClipboardOpen(false)}
-              onInsert={(text) => editorRef.current?.insertContent(text)}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {quickShortcutsOpen && (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <QuickShortcuts onClose={() => setQuickShortcutsOpen(false)} />
-          </Suspense>
-        </ErrorBoundary>
-      )}
+      <ModalPanels
+        versionHistoryOpen={versionHistoryOpen}
+        setVersionHistoryOpen={setVersionHistoryOpen}
+        searchOpen={searchOpen}
+        setSearchOpen={setSearchOpen}
+        shortcutsHelpOpen={shortcutsHelpOpen}
+        setShortcutsHelpOpen={setShortcutsHelpOpen}
+        findReplaceOpen={findReplaceOpen}
+        setFindReplaceOpen={setFindReplaceOpen}
+        wordCountOpen={wordCountOpen}
+        setWordCountOpen={setWordCountOpen}
+        outlinePanelOpen={outlinePanelOpen}
+        setOutlinePanelOpen={setOutlinePanelOpen}
+        writingStatsOpen={writingStatsOpen}
+        setWritingStatsOpen={setWritingStatsOpen}
+        wordGoalOpen={wordGoalOpen}
+        setWordGoalOpen={setWordGoalOpen}
+        settingsOpen={settingsOpen}
+        setSettingsOpen={setSettingsOpen}
+        writingModesOpen={writingModesOpen}
+        setWritingModesOpen={setWritingModesOpen}
+        pluginMarketOpen={pluginMarketOpen}
+        setPluginMarketOpen={setPluginMarketOpen}
+        writingChartOpen={writingChartOpen}
+        setWritingChartOpen={setWritingChartOpen}
+        templatesOpen={templatesOpen}
+        setTemplatesOpen={setTemplatesOpen}
+        reminderOpen={reminderOpen}
+        setReminderOpen={setReminderOpen}
+        shareOpen={shareOpen}
+        setShareOpen={setShareOpen}
+        clipboardOpen={clipboardOpen}
+        setClipboardOpen={setClipboardOpen}
+        quickShortcutsOpen={quickShortcutsOpen}
+        setQuickShortcutsOpen={setQuickShortcutsOpen}
+        currentDocId={currentDoc?.id}
+        currentDocTitle={currentDoc?.title}
+        currentDocContent={currentDoc?.content}
+        editor={editorRef.current?.getEditor() || null}
+        setCurrentDoc={setCurrentDoc}
+        openTab={openTab}
+        onClipboardInsert={(text) => editorRef.current?.insertContent(text)}
+      />
 
       {isMobile && !focusMode && (
         <Suspense fallback={null}>

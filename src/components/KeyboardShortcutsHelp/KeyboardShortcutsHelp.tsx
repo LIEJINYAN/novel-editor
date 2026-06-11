@@ -1,4 +1,4 @@
-import { useShortcutStore, DEFAULT_SHORTCUTS } from '../../store/shortcutStore'
+import { useShortcutStore } from '../../store/shortcutStore'
 import Modal from '../common/Modal'
 
 interface Props {

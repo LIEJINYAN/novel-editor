@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, useRef, createContext, useContext, type ReactNode } from 'react'
 
 interface Toast {
   id: number
@@ -21,11 +21,11 @@ export function useToast() {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
-  let nextId = 0
+  const nextIdRef = useRef(0)
 
   const showToast = useCallback(
     (message: string, type: Toast['type'] = 'info', duration = 3000) => {
-      const id = nextId++
+      const id = nextIdRef.current++
       setToasts((prev) => [...prev, { id, message, type, duration }])
     },
     []
@@ -70,6 +70,8 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
   return (
     <div
       className={`pointer-events-auto px-4 py-2 rounded-lg shadow-lg text-sm animate-slide-in flex items-center gap-2 ${typeStyles[toast.type]}`}
+      role={toast.type === 'error' || toast.type === 'warning' ? 'alert' : 'status'}
+      aria-live={toast.type === 'error' || toast.type === 'warning' ? 'assertive' : 'polite'}
       onClick={() => onRemove(toast.id)}
     >
       <span>{icons[toast.type]}</span>

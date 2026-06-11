@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { NodeViewProps } from '@tiptap/react'
+import { loadMonaco, loadLanguage } from '../utils/monacoLoader'
 
 const SUPPORTED_LANGUAGES = [
   { id: 'plaintext', label: '纯文本' },
@@ -25,7 +26,7 @@ export default function MonacoView({ node, updateAttributes, editor }: NodeViewP
   useEffect(() => {
     let cancelled = false
 
-    import('monaco-editor').then((monaco) => {
+    loadMonaco().then((monaco) => {
       if (cancelled) return
       monacoRef.current = monaco
       setLoaded(true)
@@ -36,11 +37,15 @@ export default function MonacoView({ node, updateAttributes, editor }: NodeViewP
     }
   }, [])
 
-  const initEditor = useCallback(() => {
+  const initEditor = useCallback(async () => {
     if (!containerRef.current || !monacoRef.current || editorRef.current) return
 
     const monaco = monacoRef.current
-    const modelUri = monaco.Uri.parse(`file:///codeblock-${node.attrs.language || 'plaintext'}.txt`)
+    const langId = node.attrs.language || 'plaintext'
+
+    await loadLanguage(langId)
+
+    const modelUri = monaco.Uri.parse(`file:///codeblock-${langId}.txt`)
 
     let model = monaco.editor.getModel(modelUri)
     if (!model) {

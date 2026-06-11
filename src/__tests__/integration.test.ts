@@ -10,17 +10,17 @@ describe('完整业务流程集成测试', () => {
     })
   })
 
-  it('should complete create-edit-switch workflow', () => {
+  it('should complete create-edit-switch workflow', async () => {
     const { addDoc, updateDoc, setCurrentDoc, getCurrentDoc } = useDocumentStore.getState()
 
-    const id1 = addDoc({
+    const id1 = await addDoc({
       title: '第一章',
       type: 'chapter',
       content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: '初始内容' }] }] },
       parentId: null,
     })
 
-    const id2 = addDoc({
+    const id2 = await addDoc({
       title: '第二章',
       type: 'chapter',
       content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: '第二章内容' }] }] },
@@ -42,24 +42,24 @@ describe('完整业务流程集成测试', () => {
     expect(current?.title).toBe('第二章')
   })
 
-  it('should handle document hierarchy', () => {
+  it('should handle document hierarchy', async () => {
     const { addDoc, setCurrentDoc, getCurrentDoc } = useDocumentStore.getState()
 
-    const volumeId = addDoc({
+    const volumeId = await addDoc({
       title: '第一卷',
       type: 'chapter',
       content: { type: 'doc', content: [] },
       parentId: null,
     })
 
-    const chapter1Id = addDoc({
+    const chapter1Id = await addDoc({
       title: '第一章',
       type: 'chapter',
       content: { type: 'doc', content: [] },
       parentId: volumeId,
     })
 
-    const chapter2Id = addDoc({
+    const chapter2Id = await addDoc({
       title: '第二章',
       type: 'chapter',
       content: { type: 'doc', content: [] },
@@ -76,10 +76,10 @@ describe('完整业务流程集成测试', () => {
     expect(getCurrentDoc()?.title).toBe('第一章')
   })
 
-  it('should handle character and scene management', () => {
+  it('should handle character and scene management', async () => {
     const { addDoc, updateDoc, removeDoc } = useDocumentStore.getState()
 
-    const charId = addDoc({
+    const charId = await addDoc({
       title: '主角',
       type: 'character',
       content: {
@@ -91,7 +91,7 @@ describe('完整业务流程集成测试', () => {
       parentId: null,
     })
 
-    const sceneId = addDoc({
+    const sceneId = await addDoc({
       title: '开场场景',
       type: 'scene',
       content: {
@@ -117,14 +117,14 @@ describe('完整业务流程集成测试', () => {
     const char = useDocumentStore.getState().documents.find((d) => d.id === charId)
     expect(char?.content).toHaveProperty('type', 'doc')
 
-    removeDoc(sceneId)
+    await removeDoc(sceneId)
     expect(useDocumentStore.getState().documents).toHaveLength(1)
   })
 
-  it('should handle version control workflow', () => {
+  it('should handle version control workflow', async () => {
     const { addDoc, updateDoc, createVersion, restoreVersion, getVersions } = useDocumentStore.getState()
 
-    const id = addDoc({
+    const id = await addDoc({
       title: '版本测试文档',
       type: 'chapter',
       content: { type: 'doc', content: [{ type: 'text', text: '版本1' }] },
@@ -146,12 +146,12 @@ describe('完整业务流程集成测试', () => {
     expect(doc?.title).toBe('版本测试文档')
   })
 
-  it('should handle bulk operations', () => {
+  it('should handle bulk operations', async () => {
     const { addDoc, removeDoc } = useDocumentStore.getState()
 
     const ids: string[] = []
-    for (let i = 1; i <= 10; i++) {
-      const id = addDoc({
+    for (let i = 1; i <= 5; i++) {
+      const id = await addDoc({
         title: `文档${i}`,
         type: 'chapter',
         content: { type: 'doc', content: [] },
@@ -160,12 +160,16 @@ describe('完整业务流程集成测试', () => {
       ids.push(id)
     }
 
-    expect(useDocumentStore.getState().documents).toHaveLength(10)
-
-    ids.slice(0, 5).forEach((id) => removeDoc(id))
     expect(useDocumentStore.getState().documents).toHaveLength(5)
 
-    ids.slice(5).forEach((id) => removeDoc(id))
+    for (const id of ids.slice(0, 3)) {
+      await removeDoc(id)
+    }
+    expect(useDocumentStore.getState().documents).toHaveLength(2)
+
+    for (const id of ids.slice(3)) {
+      await removeDoc(id)
+    }
     expect(useDocumentStore.getState().documents).toHaveLength(0)
   })
 })

@@ -9,6 +9,8 @@ import { getCloudConfig, saveCloudConfig, clearCloudConfig, testConnection, sync
 import Modal from '../common/Modal'
 import type { ThemeColors } from '../../store/customThemeStore'
 import type { CloudProvider } from '../../services/cloudSync'
+import type { SaveStrategy } from '../../store/autoSaveStore'
+import type { FocusToolbarMode } from '../../store/uiStore'
 
 interface Props {
   onClose: () => void
@@ -267,7 +269,7 @@ export default function SettingsPanel({ onClose }: Props) {
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <span className="text-xs text-editor-muted">保存策略</span>
-                    <select value={strategy} onChange={(e) => setStrategy(e.target.value as any)} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
+                    <select value={strategy} onChange={(e) => setStrategy(e.target.value as SaveStrategy)} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
                       <option value="auto">自动</option>
                       <option value="smart">智能</option>
                       <option value="manual">手动</option>
@@ -291,7 +293,7 @@ export default function SettingsPanel({ onClose }: Props) {
                 <h3 className="text-sm font-medium text-editor-text">专注模式设置</h3>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-xs text-editor-muted">工具栏显示模式</span>
-                  <select value={focusToolbarMode} onChange={(e) => setFocusToolbarMode(e.target.value as any)} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
+                    <select value={focusToolbarMode} onChange={(e) => setFocusToolbarMode(e.target.value as FocusToolbarMode)} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
                     <option value="auto">悬停显示</option>
                     <option value="always">始终显示</option>
                     <option value="never">从不显示</option>

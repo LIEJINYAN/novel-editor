@@ -32,7 +32,7 @@ export const useCollaborationStore = create<CollaborationState>((set, get) => ({
     const service = createCollaborationService({ serverUrl, documentId })
 
     service.on('connected', ({ userId, color }) => {
-      console.log('Connected as', userId, color)
+      // connected
     })
 
     service.on('document-joined', ({ content, version, collaborators }) => {

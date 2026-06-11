@@ -131,6 +131,41 @@ body {
   animation: fadeIn 0.3s ease-out;
 }
 
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.2s ease-out;
+}
+
+.modal-overlay-enter {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content-enter {
+  animation: scaleIn 0.2s ease-out;
+}
+
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -163,4 +198,52 @@ body {
   .prevent-overscroll {
     overscroll-behavior: contain;
   }
+}
+
+/* High Contrast Mode */
+.high-contrast {
+  --editor-bg: #000000;
+  --editor-sidebar: #0a0a0a;
+  --editor-surface: #1a1a1a;
+  --editor-border: #ffffff;
+  --editor-text: #ffffff;
+  --editor-muted: #cccccc;
+  --editor-accent: #00ffff;
+  --editor-green: #00ff00;
+  --editor-red: #ff0000;
+}
+
+.high-contrast * {
+  border-color: #ffffff !important;
+}
+
+.high-contrast button {
+  border: 1px solid #ffffff !important;
+}
+
+.high-contrast input,
+.high-contrast textarea {
+  border: 2px solid #ffffff !important;
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast a {
+  color: #00ffff !important;
+  text-decoration: underline !important;
+}
+
+.high-contrast ::selection {
+  background: #00ffff !important;
+  color: #000000 !important;
+}
+
+/* Touch gestures */
+@keyframes swipe-hint {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+.swipe-hint {
+  animation: swipe-hint 1s ease-in-out infinite;
 }

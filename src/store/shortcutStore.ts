@@ -29,6 +29,7 @@ const DEFAULT_SHORTCUTS: ShortcutDef[] = [
   { id: 'help', label: '快捷键帮助', key: 'F1', code: 'F1' },
   { id: 'fullscreen', label: '全屏', key: 'F11', code: 'F11' },
   { id: 'exitFocus', label: '退出专注模式', key: 'Escape', code: 'ESC' },
+  { id: 'toggleAIPanel', label: '切换AI面板', key: 'A', ctrl: true, shift: true, code: 'Ctrl+Shift+A' },
   { id: 'tab1', label: '切换标签1', key: '1', alt: true, code: 'Alt+1' },
   { id: 'tab2', label: '切换标签2', key: '2', alt: true, code: 'Alt+2' },
   { id: 'tab3', label: '切换标签3', key: '3', alt: true, code: 'Alt+3' },
@@ -83,6 +84,7 @@ interface ShortcutStore {
   resetAll: () => void
   getShortcut: (id: string) => ShortcutDef | undefined
   matchShortcut: (e: KeyboardEvent) => ShortcutDef | undefined
+  findConflicts: (id: string, key: string, ctrl?: boolean, shift?: boolean, alt?: boolean) => ShortcutDef[]
 }
 
 export const useShortcutStore = create<ShortcutStore>((set, get) => ({
@@ -128,6 +130,15 @@ export const useShortcutStore = create<ShortcutStore>((set, get) => ({
     return get().shortcuts.find((s) => {
       const keyMatch = s.key.length === 1 ? s.key.toUpperCase() === key : s.key === e.key
       return keyMatch && !!s.ctrl === isCtrl && !!s.shift === e.shiftKey && !!s.alt === e.altKey
+    })
+  },
+
+  findConflicts: (id, key, ctrl, shift, alt) => {
+    const shortcuts = get().shortcuts
+    return shortcuts.filter((s) => {
+      if (s.id === id) return false
+      const keyMatch = s.key.length === 1 ? s.key.toUpperCase() === key.toUpperCase() : s.key === key
+      return keyMatch && !!s.ctrl === !!ctrl && !!s.shift === !!shift && !!s.alt === !!alt
     })
   },
 }))

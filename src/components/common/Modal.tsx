@@ -82,7 +82,7 @@ export default function Modal({ open, onClose, children, className = '', title, 
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 modal-overlay-enter"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -92,7 +92,7 @@ export default function Modal({ open, onClose, children, className = '', title, 
     >
       <div
         ref={contentRef}
-        className={`bg-editor-surface border border-editor-border rounded-lg shadow-2xl ${sizeClasses[size]} max-h-[85vh] overflow-hidden flex flex-col animate-fade-in ${className}`}
+        className={`bg-editor-surface border border-editor-border rounded-lg shadow-2xl ${sizeClasses[size]} max-h-[85vh] overflow-hidden flex flex-col modal-content-enter ${className}`}
       >
         {children}
       </div>

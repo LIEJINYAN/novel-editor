@@ -13,6 +13,8 @@ export default function FindReplace({ editor, onClose }: Props) {
   const [matchCount, setMatchCount] = useState(0)
   const [currentMatch, setCurrentMatch] = useState(0)
   const [caseSensitive, setCaseSensitive] = useState(false)
+  const [useRegex, setUseRegex] = useState(false)
+  const [previewMatches, setPreviewMatches] = useState<string[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -23,36 +25,70 @@ export default function FindReplace({ editor, onClose }: Props) {
     if (!editor || !searchQuery) {
       setMatchCount(0)
       setCurrentMatch(0)
+      setPreviewMatches([])
       return
     }
 
     const { state } = editor
     const { doc } = state
     let count = 0
+    const previews: string[] = []
+
+    let regex: RegExp | null = null
+    if (useRegex) {
+      try {
+        regex = new RegExp(searchQuery, caseSensitive ? 'g' : 'gi')
+      } catch {
+        setMatchCount(0)
+        setCurrentMatch(0)
+        setPreviewMatches([])
+        return
+      }
+    }
 
     doc.descendants((node) => {
       if (node.isText) {
         const text = node.text || ''
-        const searchLower = caseSensitive ? searchQuery : searchQuery.toLowerCase()
-        const textLower = caseSensitive ? text : text.toLowerCase()
 
-        let startPos = 0
-        while (startPos < text.length) {
-          const found = textLower.indexOf(searchLower, startPos)
-          if (found === -1) break
-          count++
-          startPos = found + 1
+        if (regex) {
+          let match
+          while ((match = regex.exec(text)) !== null) {
+            count++
+            if (previews.length < 3) {
+              const start = Math.max(0, match.index - 10)
+              const end = Math.min(text.length, match.index + match[0].length + 10)
+              previews.push(`...${text.slice(start, end)}...`)
+            }
+          }
+          regex.lastIndex = 0
+        } else {
+          const searchLower = caseSensitive ? searchQuery : searchQuery.toLowerCase()
+          const textLower = caseSensitive ? text : text.toLowerCase()
+
+          let startPos = 0
+          while (startPos < text.length) {
+            const found = textLower.indexOf(searchLower, startPos)
+            if (found === -1) break
+            count++
+            if (previews.length < 3) {
+              const start = Math.max(0, found - 10)
+              const end = Math.min(text.length, found + searchQuery.length + 10)
+              previews.push(`...${text.slice(start, end)}...`)
+            }
+            startPos = found + 1
+          }
         }
       }
     })
 
     setMatchCount(count)
+    setPreviewMatches(previews)
     if (count > 0 && currentMatch === 0) {
       setCurrentMatch(1)
     } else if (count === 0) {
       setCurrentMatch(0)
     }
-  }, [editor, searchQuery, caseSensitive, currentMatch])
+  }, [editor, searchQuery, caseSensitive, useRegex, currentMatch])
 
   useEffect(() => {
     highlightMatches()
@@ -295,7 +331,7 @@ export default function FindReplace({ editor, onClose }: Props) {
           <input
             ref={inputRef}
             className="flex-1 bg-editor-bg text-editor-text text-xs px-2 py-1.5 rounded border border-editor-border outline-none placeholder:text-editor-muted"
-            placeholder="查找..."
+            placeholder={useRegex ? '正则表达式...' : '查找...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -311,11 +347,33 @@ export default function FindReplace({ editor, onClose }: Props) {
           >
             Aa
           </button>
+          <button
+            className={`text-xs px-2 py-1.5 rounded ${
+              useRegex
+                ? 'bg-editor-accent text-editor-bg'
+                : 'text-editor-muted hover:text-editor-text hover:bg-editor-bg'
+            }`}
+            onClick={() => setUseRegex(!useRegex)}
+            title="正则表达式"
+          >
+            .*
+          </button>
         </div>
 
         {searchQuery && (
           <div className="text-xs text-editor-muted">
             {matchCount > 0 ? `${currentMatch} / ${matchCount}` : '无匹配'}
+          </div>
+        )}
+
+        {previewMatches.length > 0 && (
+          <div className="bg-editor-bg rounded p-2 max-h-20 overflow-y-auto">
+            <p className="text-[10px] text-editor-muted mb-1">预览:</p>
+            {previewMatches.map((preview, i) => (
+              <p key={i} className="text-[10px] text-editor-text font-mono truncate">
+                {preview}
+              </p>
+            ))}
           </div>
         )}
 

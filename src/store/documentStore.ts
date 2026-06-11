@@ -1,5 +1,7 @@
 import { create } from 'zustand'
-import { saveToIndexedDB, getAllFromIndexedDB } from '../utils/idb'
+import { saveToIndexedDB, getAllFromIndexedDB, deleteFromIndexedDB } from '../utils/idb'
+import { throttle } from '../utils/throttle'
+import { showError } from '../utils/toast'
 
 export interface DocumentVersion {
   id: string
@@ -15,16 +17,26 @@ export interface Document {
   content: object
   updatedAt: number
   parentId: string | null
+  folderId?: string | null
   versions?: DocumentVersion[]
+}
+
+export interface Folder {
+  id: string
+  name: string
+  parentId: string | null
+  createdAt: number
+  updatedAt: number
 }
 
 interface DocumentState {
   documents: Document[]
+  folders: Folder[]
   currentDocId: string | null
   isLoaded: boolean
   isDirty: boolean
-  addDoc: (doc: Omit<Document, 'id' | 'updatedAt'>) => string
-  removeDoc: (id: string) => void
+  addDoc: (doc: Omit<Document, 'id' | 'updatedAt'>) => Promise<string>
+  removeDoc: (id: string) => Promise<void>
   updateDoc: (id: string, updates: Partial<Document>) => void
   setCurrentDoc: (id: string | null) => void
   getCurrentDoc: () => Document | undefined
@@ -35,10 +47,40 @@ interface DocumentState {
   getVersions: (docId: string) => DocumentVersion[]
   markDirty: () => void
   markClean: () => void
+  moveDocToFolder: (docId: string, folderId: string | null) => void
+  addFolder: (name: string, parentId?: string | null) => string
+  removeFolder: (id: string) => void
+  renameFolder: (id: string, name: string) => void
+  getDocumentsInFolder: (folderId: string | null) => Document[]
+  getSubFolders: (parentId: string | null) => Folder[]
 }
 
 let docCounter = 0
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
+
+const throttledSave = throttle(async (getState: () => DocumentState) => {
+  const state = getState()
+  try {
+    for (const doc of state.documents) {
+      await saveToIndexedDB('documents', doc)
+    }
+    for (const folder of state.folders) {
+      await saveToIndexedDB('folders', folder)
+    }
+  } catch (err) {
+    showError('自动保存失败')
+    console.error('Auto-save failed:', err)
+  }
+}, 2000)
+
+function debounceSave(getState: () => DocumentState) {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout)
+  }
+  saveTimeout = setTimeout(() => {
+    throttledSave(getState)
+  }, 500)
+}
 
 const WELCOME_DOC: Document = {
   id: 'welcome',
@@ -55,24 +97,9 @@ const WELCOME_DOC: Document = {
   parentId: null,
 }
 
-function debounceSave(getState: () => DocumentState) {
-  if (saveTimeout) {
-    clearTimeout(saveTimeout)
-  }
-  saveTimeout = setTimeout(async () => {
-    const state = getState()
-    try {
-      for (const doc of state.documents) {
-        await saveToIndexedDB('documents', doc)
-      }
-    } catch (err) {
-      console.error('Auto-save failed:', err)
-    }
-  }, 1000)
-}
-
 export const useDocumentStore = create<DocumentState>((set, get) => ({
   documents: [],
+  folders: [],
   currentDocId: null,
   isLoaded: false,
   isDirty: false,
@@ -80,15 +107,16 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   loadFromDB: async () => {
     try {
       const docs = await getAllFromIndexedDB<Document>('documents')
+      const folders = await getAllFromIndexedDB<Folder>('folders')
       if (docs.length > 0) {
-        set({ documents: docs, isLoaded: true })
+        set({ documents: docs, folders: folders || [], isLoaded: true })
       } else {
-        set({ documents: [WELCOME_DOC], currentDocId: 'welcome', isLoaded: true })
+        set({ documents: [WELCOME_DOC], folders: [], currentDocId: 'welcome', isLoaded: true })
         await saveToIndexedDB('documents', WELCOME_DOC)
       }
     } catch (err) {
       console.error('Failed to load from DB:', err)
-      set({ documents: [WELCOME_DOC], currentDocId: 'welcome', isLoaded: true })
+      set({ documents: [WELCOME_DOC], folders: [], currentDocId: 'welcome', isLoaded: true })
     }
   },
 
@@ -103,21 +131,40 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
   },
 
-  addDoc: (doc) => {
+  addDoc: async (doc) => {
     const id = `doc_${++docCounter}_${Date.now()}`
     const newDoc = { ...doc, id, updatedAt: Date.now() }
     set((state) => ({
       documents: [...state.documents, newDoc],
     }))
-    debounceSave(get)
+    try {
+      await saveToIndexedDB('documents', newDoc)
+    } catch (err) {
+      showError('保存文档失败')
+      console.error('Failed to save new doc to DB:', err)
+    }
     return id
   },
 
-  removeDoc: (id) => {
+  moveDocToFolder: (docId, folderId) => {
+    set((state) => ({
+      documents: state.documents.map((d) =>
+        d.id === docId ? { ...d, folderId, updatedAt: Date.now() } : d
+      ),
+    }))
+  },
+
+  removeDoc: async (id) => {
     set((state) => ({
       documents: state.documents.filter((d) => d.id !== id),
       currentDocId: state.currentDocId === id ? null : state.currentDocId,
     }))
+    try {
+      await deleteFromIndexedDB('documents', id)
+    } catch (err) {
+      showError('删除文档失败')
+      console.error('Failed to delete from DB:', err)
+    }
     debounceSave(get)
   },
 
@@ -190,4 +237,48 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   markDirty: () => set({ isDirty: true }),
   markClean: () => set({ isDirty: false }),
+
+  addFolder: (name, parentId = null) => {
+    const id = `folder_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    const newFolder: Folder = {
+      id,
+      name,
+      parentId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    }
+    set((state) => ({
+      folders: [...state.folders, newFolder],
+    }))
+    saveToIndexedDB('folders', newFolder).catch(console.error)
+    return id
+  },
+
+  removeFolder: (id) => {
+    set((state) => ({
+      folders: state.folders.filter((f) => f.id !== id),
+      documents: state.documents.map((d) =>
+        d.folderId === id ? { ...d, folderId: null } : d
+      ),
+    }))
+    deleteFromIndexedDB('folders', id).catch(console.error)
+  },
+
+  renameFolder: (id, name) => {
+    set((state) => ({
+      folders: state.folders.map((f) =>
+        f.id === id ? { ...f, name, updatedAt: Date.now() } : f
+      ),
+    }))
+  },
+
+  getDocumentsInFolder: (folderId) => {
+    const state = get()
+    return state.documents.filter((d) => d.folderId === folderId)
+  },
+
+  getSubFolders: (parentId) => {
+    const state = get()
+    return state.folders.filter((f) => f.parentId === parentId)
+  },
 }))

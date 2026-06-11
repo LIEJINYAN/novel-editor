@@ -109,6 +109,91 @@ const TEMPLATES: Template[] = [
       { type: 'paragraph', content: [{ type: 'text', text: '内景/外景 - 地点 - 时间' }], marks: [{ type: 'bold' }] },
     ] },
   },
+  {
+    id: 'novel-outline', name: '小说大纲', icon: '📋', description: '小说整体大纲规划模板',
+    content: { type: 'doc', content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: '小说大纲' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '故事梗概' }] },
+      { type: 'paragraph', content: [{ type: 'text', text: '用200字概括整个故事...' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '主要角色' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '章节规划' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '核心冲突' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '结局走向' }] },
+    ] },
+  },
+  {
+    id: 'character-setting', name: '人物设定', icon: '👤', description: '详细人物设定模板',
+    content: { type: 'doc', content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: '人物设定' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '基本信息' }] },
+      { type: 'paragraph', content: [{ type: 'text', text: '姓名：\n年龄：\n性别：\n外貌：' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '性格特征' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '背景故事' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '人物关系' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '成长弧线' }] },
+    ] },
+  },
+  {
+    id: 'worldbuilding', name: '世界观设定', icon: '🌍', description: '完整世界观构建模板',
+    content: { type: 'doc', content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: '世界观设定' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '时代背景' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '地理环境' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '社会制度' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '文化习俗' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '魔法/科技体系' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '历史大事' }] },
+    ] },
+  },
+  {
+    id: 'plot-structure', name: '情节结构', icon: '📈', description: '三幕式情节结构模板',
+    content: { type: 'doc', content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: '情节结构' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '第一幕：建置' }] },
+      { type: 'paragraph', content: [{ type: 'text', text: '日常世界 → 激励事件 → 跨越门槛' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '第二幕：对抗' }] },
+      { type: 'paragraph', content: [{ type: 'text', text: '试炼与盟友 → 中点转折 → 一切尽失' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '第三幕：解决' }] },
+      { type: 'paragraph', content: [{ type: 'text', text: '高潮 → 结局 → 新常态' }] },
+    ] },
+  },
+  {
+    id: 'poem-modern', name: '现代诗', icon: '🌸', description: '现代诗歌创作模板',
+    content: { type: 'doc', content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: '诗歌标题' }] },
+      { type: 'paragraph' },
+      { type: 'paragraph', content: [{ type: 'text', text: '第一诗节' }] },
+      { type: 'paragraph' },
+      { type: 'paragraph', content: [{ type: 'text', text: '第二诗节' }] },
+      { type: 'paragraph' },
+      { type: 'paragraph', content: [{ type: 'text', text: '第三诗节' }] },
+    ] },
+  },
+  {
+    id: 'academic', name: '学术论文', icon: '🎓', description: '学术论文写作模板',
+    content: { type: 'doc', content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: '论文标题' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '摘要' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '关键词' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '引言' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '文献综述' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '研究方法' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '结果与讨论' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '结论' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '参考文献' }] },
+    ] },
+  },
+  {
+    id: 'short-story', name: '短篇小说', icon: '📚', description: '短篇小说创作模板',
+    content: { type: 'doc', content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: '短篇标题' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '开头' }] },
+      { type: 'paragraph', content: [{ type: 'text', text: '引人入胜的第一段...' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '发展' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '高潮' }] },
+      { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: '结局' }] },
+    ] },
+  },
 ]
 
 export default function DocumentTemplates({ onClose, onSelect }: Props) {

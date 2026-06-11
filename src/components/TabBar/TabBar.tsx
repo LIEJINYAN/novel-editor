@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { useTabStore } from '../../store/tabStore'
 import { useDocumentStore } from '../../store/documentStore'
 
 interface Props {
-  onTabSelect: (docId: string) => void
+  onTabSelect: (docId: string | null) => void
 }
 
 type DocIcon = '📝' | '📖' | '📄' | '🎭' | '📋' | '📊' | '🗂️'
@@ -25,8 +26,9 @@ function setDocIcon(docId: string, icon: DocIcon) {
 }
 
 export default function TabBar({ onTabSelect }: Props) {
-  const { openTabs, activeTabId, closeTab, setActiveTab } = useTabStore()
+  const { openTabs, activeTabId, closeTab, setActiveTab, recentlyClosed, reopenTab, clearRecentlyClosed } = useTabStore()
   const documents = useDocumentStore((s) => s.documents)
+  const [showRecentlyClosed, setShowRecentlyClosed] = useState(false)
 
   if (openTabs.length === 0) return null
 
@@ -38,6 +40,22 @@ export default function TabBar({ onTabSelect }: Props) {
   const handleClose = (e: React.MouseEvent, docId: string) => {
     e.stopPropagation()
     closeTab(docId)
+
+    const newActiveId = useTabStore.getState().activeTabId
+    if (newActiveId) {
+      onTabSelect(newActiveId)
+    } else {
+      onTabSelect(null)
+    }
+  }
+
+  const handleReopen = (docId: string) => {
+    reopenTab(docId)
+    setShowRecentlyClosed(false)
+    const newActiveId = useTabStore.getState().activeTabId
+    if (newActiveId) {
+      onTabSelect(newActiveId)
+    }
   }
 
   const handleIconClick = (e: React.MouseEvent, docId: string) => {
@@ -77,14 +95,53 @@ export default function TabBar({ onTabSelect }: Props) {
               {doc?.title || tab.title}
             </span>
             <button
-              className="text-xs opacity-0 group-hover:opacity-100 hover:text-editor-red shrink-0"
+              className="text-xs opacity-40 hover:opacity-100 hover:text-editor-red shrink-0 px-1.5 py-0.5 rounded hover:bg-red-500/10 transition-all"
               onClick={(e) => handleClose(e, tab.docId)}
+              title="关闭"
             >
               ✕
             </button>
           </div>
         )
       })}
+
+      {recentlyClosed.length > 0 && (
+        <div className="relative ml-auto">
+          <button
+            className="text-xs text-editor-muted hover:text-editor-text px-2 py-2"
+            onClick={() => setShowRecentlyClosed(!showRecentlyClosed)}
+            title="最近关闭"
+          >
+            🕐
+          </button>
+          {showRecentlyClosed && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowRecentlyClosed(false)} />
+              <div className="absolute top-full right-0 mt-1 z-20 bg-editor-surface border border-editor-border rounded-lg shadow-lg py-1 min-w-[200px] max-h-[300px] overflow-y-auto">
+                <div className="px-3 py-1 text-[10px] text-editor-muted border-b border-editor-border flex items-center justify-between">
+                  <span>最近关闭</span>
+                  <button
+                    className="text-editor-muted hover:text-editor-text"
+                    onClick={() => { clearRecentlyClosed(); setShowRecentlyClosed(false) }}
+                  >
+                    清空
+                  </button>
+                </div>
+                {recentlyClosed.map((tab) => (
+                  <button
+                    key={tab.docId}
+                    className="w-full text-left px-3 py-1.5 text-xs text-editor-text hover:bg-editor-bg flex items-center gap-2"
+                    onClick={() => handleReopen(tab.docId)}
+                  >
+                    <span>📄</span>
+                    <span className="truncate">{tab.title}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

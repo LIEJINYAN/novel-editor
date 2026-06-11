@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-type FocusToolbarMode = 'auto' | 'always' | 'never'
+export type FocusToolbarMode = 'auto' | 'always' | 'never'
 
 interface UIState {
   focusMode: boolean

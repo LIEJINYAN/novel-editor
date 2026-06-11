@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-type SaveStrategy = 'auto' | 'manual' | 'smart'
+export type SaveStrategy = 'auto' | 'manual' | 'smart'
 
 interface AutoSaveState {
   strategy: SaveStrategy

@@ -1,5 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react'
-import { forwardRef, useImperativeHandle, useEffect, useRef, memo, useCallback } from 'react'
+import { forwardRef, useImperativeHandle, useEffect, useRef, memo } from 'react'
 import { novelExtensions, getNovelEditorProps } from '../../editor/novelEditor'
 import EditorToolbar from './EditorToolbar'
 import AIToolbar from '../AIToolbar/AIToolbar'
@@ -8,6 +8,10 @@ import { useDocumentSessionStore } from '../../store/documentSessionStore'
 import { useCollaborationStore } from '../../store/collaborationStore'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import type { Operation } from '../../services/collaboration'
+
+interface ProseMirrorElement extends HTMLElement {
+  editor?: TiptapEditor
+}
 
 export interface EditorRef {
   getEditor: () => TiptapEditor | null
@@ -18,16 +22,17 @@ interface Props {
   docId: string
   initialContent?: object
   onChange?: (content: object) => void
+  onSelectionChange?: (selection: string) => void
   editorContent?: string
 }
 
 const MemoizedAIToolbar = memo(AIToolbar)
 
-const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, editorContent }, ref) => {
+const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, onSelectionChange, editorContent }, ref) => {
   const wordWrap = useThemeStore((s) => s.wordWrap)
   const editorProps = getNovelEditorProps(wordWrap)
 
-  const { createSession, removeSession, pushUndo, undo, redo, canUndo, canRedo, setCursorPosition, getCursorPosition, setScrollPosition, getScrollPosition } = useDocumentSessionStore()
+  const { createSession, removeSession, pushUndo, setCursorPosition, getCursorPosition, setScrollPosition, getScrollPosition } = useDocumentSessionStore()
   const { isConnected, sendOperation, sendCursorUpdate } = useCollaborationStore()
 
   const lastContentRef = useRef<string>('')
@@ -41,6 +46,7 @@ const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, 
       if (undoTimeoutRef.current) {
         clearTimeout(undoTimeoutRef.current)
       }
+      removeSession(docId)
     }
   }, [docId, createSession, removeSession])
 
@@ -52,7 +58,7 @@ const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, 
       const editor = useDocumentSessionStore.getState()
       skipRemoteRef.current = true
 
-      const editorInstance = document.querySelector('.ProseMirror') as any
+      const editorInstance = document.querySelector('.ProseMirror') as ProseMirrorElement | null
       if (editorInstance?.editor) {
         const tiptapEditor = editorInstance.editor
         switch (op.type) {
@@ -78,13 +84,15 @@ const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, 
     return () => window.removeEventListener('collaboration-operation', handleRemoteOperation as EventListener)
   }, [docId])
 
-  const handleUpdate = useRef(({ editor }: { editor: TiptapEditor }) => {
+  const handleUpdateRef = useRef<(({ editor }: { editor: TiptapEditor }) => void) | null>(null)
+  handleUpdateRef.current = ({ editor }: { editor: TiptapEditor }) => {
     if (isComposingRef.current || skipRemoteRef.current) return
 
     const content = editor.getJSON()
     onChange?.(content)
 
-    if (isConnected) {
+    const { isConnected: conn, sendOperation: sendOp } = useCollaborationStore.getState()
+    if (conn) {
       const contentStr = JSON.stringify(content)
       const lastStr = lastContentRef.current
       if (contentStr !== lastStr) {
@@ -96,7 +104,7 @@ const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, 
         if (oldText !== newText) {
           const diff = computeDiff(oldText, newText)
           if (diff) {
-            sendOperation(diff)
+            sendOp(diff)
           }
         }
       }
@@ -107,12 +115,13 @@ const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, 
       if (undoTimeoutRef.current) {
         clearTimeout(undoTimeoutRef.current)
       }
+      const currentDocId = docId
       undoTimeoutRef.current = setTimeout(() => {
-        pushUndo(docId, content)
+        pushUndo(currentDocId, content)
         lastContentRef.current = contentStr
       }, 500)
     }
-  })
+  }
 
   const editor = useEditor({
     extensions: novelExtensions,
@@ -130,7 +139,7 @@ const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, 
       },
     },
     content: initialContent,
-    onUpdate: handleUpdate.current,
+    onUpdate: (props) => handleUpdateRef.current?.(props),
     onFocus: ({ editor }) => {
       const cursorPos = getCursorPosition(docId)
       if (cursorPos !== null) {
@@ -161,6 +170,12 @@ const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, 
         const { from, to } = editor.state.selection
         sendCursorUpdate({ position: from, selection: { from, to } })
       }
+
+      if (onSelectionChange) {
+        const { from, to } = editor.state.selection
+        const selectedText = editor.state.doc.textBetween(from, to, '')
+        onSelectionChange(selectedText)
+      }
     },
   })
 
@@ -179,29 +194,7 @@ const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, 
     insertContent: (text: string) => {
       editor?.chain().focus().insertContent(text).run()
     },
-    undo: () => {
-      if (!editor || !canUndo(docId)) return false
-      const content = undo(docId)
-      if (content) {
-        editor.commands.setContent(content)
-        lastContentRef.current = JSON.stringify(content)
-        return true
-      }
-      return false
-    },
-    redo: () => {
-      if (!editor || !canRedo(docId)) return false
-      const content = redo(docId)
-      if (content) {
-        editor.commands.setContent(content)
-        lastContentRef.current = JSON.stringify(content)
-        return true
-      }
-      return false
-    },
-    canUndo: () => canUndo(docId),
-    canRedo: () => canRedo(docId),
-  }), [editor, docId, canUndo, canRedo, undo, redo])
+  }), [editor])
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-editor-bg">
@@ -215,12 +208,12 @@ const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, 
       <div className="flex-1 overflow-y-auto">
         <EditorContent editor={editor} className="min-h-full" />
       </div>
-      {isConnected && <CollaboratorCursors />}
+      {isConnected && <CollaboratorBar />}
     </div>
   )
 })
 
-function CollaboratorCursors() {
+function CollaboratorBar() {
   const collaborators = useCollaborationStore((s) => s.collaborators)
 
   return (

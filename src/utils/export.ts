@@ -397,6 +397,10 @@ export interface PDFStyleOptions {
   marginLeft?: number
   marginRight?: number
   pageBreakBefore?: boolean
+  coverTitle?: string
+  coverAuthor?: string
+  coverImage?: string
+  showCover?: boolean
 }
 
 export function exportToPDFWithStyle(
@@ -413,6 +417,10 @@ export function exportToPDFWithStyle(
     marginLeft = 20,
     marginRight = 20,
     pageBreakBefore = false,
+    coverTitle,
+    coverAuthor,
+    coverImage,
+    showCover = false,
   } = options
 
   const html = tiptapToHTML(content)
@@ -422,6 +430,16 @@ export function exportToPDFWithStyle(
     alert('请允许弹出窗口以导出PDF')
     return
   }
+
+  const coverHTML = showCover ? `
+    <div class="cover-page">
+      ${coverImage ? `<img src="${coverImage}" class="cover-image" alt="封面" />` : ''}
+      <h1 class="cover-title">${coverTitle || title}</h1>
+      ${coverAuthor ? `<p class="cover-author">${coverAuthor}</p>` : ''}
+      <p class="cover-date">${new Date().toLocaleDateString('zh-CN')}</p>
+    </div>
+    <div class="page-break"></div>
+  ` : ''
 
   printWindow.document.write(`<!DOCTYPE html>
 <html lang="zh-CN">
@@ -439,6 +457,37 @@ export function exportToPDFWithStyle(
       line-height: ${lineHeight};
       color: #333;
     }
+    .cover-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      text-align: center;
+    }
+    .cover-image {
+      max-width: 300px;
+      max-height: 400px;
+      object-fit: contain;
+      margin-bottom: 40px;
+    }
+    .cover-title {
+      font-size: ${fontSize * 3}pt;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .cover-author {
+      font-size: ${fontSize * 1.5}pt;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .cover-date {
+      font-size: ${fontSize}pt;
+      color: #999;
+    }
+    .page-break {
+      page-break-after: always;
+    }
     h1 { font-size: ${fontSize * 2}pt; border-bottom: 2px solid #333; padding-bottom: 8px; ${pageBreakBefore ? 'page-break-before: always;' : ''} }
     h2 { font-size: ${fontSize * 1.5}pt; margin-top: ${fontSize * 2}pt; }
     h3 { font-size: ${fontSize * 1.2}pt; margin-top: ${fontSize * 1.5}pt; }
@@ -449,6 +498,7 @@ export function exportToPDFWithStyle(
     mark { background: #fff3cd; }
     @media print {
       body { margin: 0; }
+      .cover-page { page-break-after: always; }
       h1 { page-break-after: avoid; }
       h2 { page-break-after: avoid; }
       h3 { page-break-after: avoid; }
@@ -456,6 +506,7 @@ export function exportToPDFWithStyle(
   </style>
 </head>
 <body>
+  ${coverHTML}
   <h1>${title}</h1>
   ${html}
 </body>
@@ -468,15 +519,179 @@ export function exportToPDFWithStyle(
   }, 500)
 }
 
+function nodeToLaTeX(node: TiptapNode): string {
+  if (node.type === 'text' && node.text) {
+    let text = node.text.replace(/\\/g, '\\textbackslash{}')
+      .replace(/[&%$#_{}]/g, '\\$&')
+      .replace(/~/g, '\\textasciitilde{}')
+      .replace(/\^/g, '\\textasciicircum{}')
+
+    if (node.marks) {
+      for (const mark of node.marks) {
+        switch (mark.type) {
+          case 'bold':
+            text = `\\textbf{${text}}`
+            break
+          case 'italic':
+            text = `\\textit{${text}}`
+            break
+          case 'strike':
+            text = `\\sout{${text}}`
+            break
+          case 'code':
+            text = `\\texttt{${text}}`
+            break
+        }
+      }
+    }
+    return text
+  }
+
+  if (!node.content) return ''
+
+  const children = node.content.map(nodeToLaTeX).join('')
+
+  switch (node.type) {
+    case 'doc':
+      return `\\documentclass[12pt]{article}
+\\usepackage[UTF8]{ctex}
+\\usepackage{ulem}
+\\usepackage{hyperref}
+\\begin{document}
+${children}
+\\end{document}`
+
+    case 'paragraph':
+      return `${children}\n\n`
+
+    case 'heading': {
+      const level = (node.attrs?.level as number) || 1
+      const env = ['section', 'subsection', 'subsubsection'][level - 1] || 'subsubsection'
+      return `\\${env}{${children}}\n\n`
+    }
+
+    case 'bulletList':
+      return `\\begin{itemize}\n${children}\\end{itemize}\n\n`
+
+    case 'orderedList':
+      return `\\begin{enumerate}\n${children}\\end{enumerate}\n\n`
+
+    case 'listItem':
+      return `\\item ${children}\n`
+
+    case 'blockquote':
+      return `\\begin{quote}\n${children}\\end{quote}\n\n`
+
+    case 'codeBlock': {
+      const lang = node.attrs?.language || ''
+      return `\\begin{verbatim}\n${node.content?.map((c) => c.text || '').join('') || ''}\\end{verbatim}\n\n`
+    }
+
+    case 'horizontalRule':
+      return `\\hrulefill\n\n`
+
+    case 'hardBreak':
+      return `\\\\\n`
+
+    default:
+      return children
+  }
+}
+
+export function exportToLaTeX(title: string, content: object) {
+  const latex = nodeToLaTeX(content as TiptapNode)
+  const titleLatex = `\\title{${title}}\n\\maketitle\n\n`
+  downloadFile(titleLatex + latex, `${title}.tex`, 'application/x-latex')
+}
+
+function nodeToRTF(node: TiptapNode): string {
+  if (node.type === 'text' && node.text) {
+    let text = node.text
+      .replace(/\\/g, '\\\\')
+      .replace(/\{/g, '\\{')
+      .replace(/\}/g, '\\}')
+
+    if (node.marks) {
+      for (const mark of node.marks) {
+        switch (mark.type) {
+          case 'bold':
+            text = `{\\b ${text}}`
+            break
+          case 'italic':
+            text = `{\\i ${text}}`
+            break
+          case 'strike':
+            text = `{\\strike ${text}}`
+            break
+        }
+      }
+    }
+    return text
+  }
+
+  if (!node.content) return ''
+
+  const children = node.content.map(nodeToRTF).join('')
+
+  switch (node.type) {
+    case 'doc':
+      return `{\\rtf1\\ansi\\deff0
+{\\fonttbl{\\f0 Times New Roman;}{\\f1 宋体;}}
+\\f0\\fs24
+${children}
+}`
+
+    case 'paragraph':
+      return `${children}\\par\n`
+
+    case 'heading': {
+      const level = (node.attrs?.level as number) || 1
+      const size = 24 + (6 - level) * 4
+      return `{\\fs${size} \\b ${children}}\\par\n`
+    }
+
+    case 'bulletList':
+      return `{\\pard\\fi-360\\li360\\fs24\n${children}\\par}`
+
+    case 'orderedList':
+      return `{\\pard\\fi-360\\li360\\fs24\n${children}\\par}`
+
+    case 'listItem':
+      return `{\\bullet\\tab ${children}\\par}`
+
+    case 'blockquote':
+      return `{\\pard\\li720\\fs24\\i ${children}\\par}`
+
+    case 'codeBlock':
+      return `{\\pard\\f1\\fs20 ${node.content?.map((c) => c.text || '').join('\\par\n') || ''}\\par}`
+
+    case 'horizontalRule':
+      return `{\\pard\\brdrb\\brdrs\\brdrw10\\brsp20 \\par}\n`
+
+    case 'hardBreak':
+      return `\\line\n`
+
+    default:
+      return children
+  }
+}
+
+export function exportToRTF(title: string, content: object) {
+  const rtf = nodeToRTF(content as TiptapNode)
+  downloadFile(rtf, `${title}.rtf`, 'application/rtf')
+}
+
 export async function batchExport(
   documents: Array<{ title: string; content: object }>,
-  format: 'markdown' | 'html' | 'txt' | 'pdf'
+  format: 'markdown' | 'html' | 'txt' | 'pdf' | 'latex' | 'rtf'
 ) {
   const exporters = {
     markdown: exportToMarkdown,
     html: exportToHTML,
     txt: exportToTXT,
     pdf: exportToPDF,
+    latex: exportToLaTeX,
+    rtf: exportToRTF,
   }
 
   const exporter = exporters[format]

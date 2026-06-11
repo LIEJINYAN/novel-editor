@@ -226,7 +226,7 @@ export class CollaborationService {
     console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`)
 
     setTimeout(() => {
-      this.connect().catch(() => {})
+      this.connect().catch((err) => console.error('Reconnect failed:', err))
     }, delay)
   }
 

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { aiCompleteStream, AI_COMMANDS, getAIConfig } from '../../services/aiService'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { aiCompleteStream, AI_COMMANDS, getAIConfig, cleanAIResponse } from '../../services/aiService'
 
 interface AIToolbarProps {
   editorContent: string
@@ -11,6 +11,19 @@ export default function AIToolbar({ editorContent, onInsertContent }: AIToolbarP
   const [activeCommand, setActiveCommand] = useState<string | null>(null)
   const [result, setResult] = useState<string | null>(null)
   const [showResult, setShowResult] = useState(false)
+  const [popupPosition, setPopupPosition] = useState<'left' | 'right'>('left')
+  const resultRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (showResult && resultRef.current) {
+      const rect = resultRef.current.getBoundingClientRect()
+      if (rect.right > window.innerWidth) {
+        setPopupPosition('right')
+      } else {
+        setPopupPosition('left')
+      }
+    }
+  }, [showResult, result])
 
   const handleCommand = async (cmd: keyof typeof AI_COMMANDS) => {
     const config = getAIConfig()
@@ -39,6 +52,7 @@ export default function AIToolbar({ editorContent, onInsertContent }: AIToolbarP
           setShowResult(true)
         }
       )
+      setResult(cleanAIResponse(fullResponse))
     } catch (err: any) {
       setResult(`❌ ${err.message}`)
       setShowResult(true)
@@ -63,11 +77,11 @@ export default function AIToolbar({ editorContent, onInsertContent }: AIToolbarP
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-1 p-1 bg-editor-surface border border-editor-border rounded-lg shadow-lg">
+      <div className="flex items-center gap-1 p-1 bg-editor-surface border border-editor-border rounded-lg shadow-lg overflow-x-auto max-w-full">
         {(Object.keys(AI_COMMANDS) as Array<keyof typeof AI_COMMANDS>).map((key) => (
           <button
             key={key}
-            className={`text-xs px-2 py-1.5 rounded flex items-center gap-1 transition-colors ${
+            className={`text-xs px-2 py-1.5 rounded flex items-center gap-1 transition-colors whitespace-nowrap ${
               activeCommand === key
                 ? 'bg-editor-accent text-editor-bg'
                 : 'text-editor-muted hover:text-editor-text hover:bg-editor-bg'
@@ -83,15 +97,21 @@ export default function AIToolbar({ editorContent, onInsertContent }: AIToolbarP
       </div>
 
       {showResult && result && (
-        <div className="absolute top-full left-0 mt-2 w-80 bg-editor-surface border border-editor-border rounded-lg shadow-xl z-50 overflow-hidden">
+        <div
+          ref={resultRef}
+          className={`absolute top-full mt-2 w-80 bg-editor-surface border border-editor-border rounded-lg shadow-xl z-50 overflow-hidden ${
+            popupPosition === 'right' ? 'right-0' : 'left-0'
+          }`}
+        >
           <div className="p-2 border-b border-editor-border flex items-center justify-between">
             <span className="text-xs font-medium text-editor-text">
               {activeCommand ? AI_COMMANDS[activeCommand as keyof typeof AI_COMMANDS]?.label : 'AI 结果'}
             </span>
             <div className="flex gap-1">
               <button
-                className="text-xs text-editor-muted hover:text-editor-text px-2 py-1 rounded hover:bg-editor-bg"
+                className="text-xs text-editor-muted hover:text-editor-text px-2 py-1 rounded hover:bg-editor-bg disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleInsert}
+                disabled={loading}
               >
                 插入
               </button>

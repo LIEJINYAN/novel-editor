@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "NovelEngine Editor",
         "width": 1200,
         "height": 800,
@@ -25,6 +26,11 @@
     ],
     "security": {
       "csp": null
+    },
+    "trayIcon": {
+      "iconPath": "icons/icon.ico",
+      "iconAsTemplate": false,
+      "tooltip": "NovelEngine Editor"
     }
   },
   "bundle": {
@@ -41,16 +47,30 @@
     "windows": {
       "nsis": {
         "displayLanguageSelector": true,
-        "installerIcon": "icons/icon.ico"
+        "installerIcon": "icons/icon.ico",
+        "installMode": "both"
       },
       "wix": null
     },
     "macOS": {
-      "minimumSystemVersion": "10.15"
+      "minimumSystemVersion": "10.15",
+      "dmg": {
+        "appPosition": { "x": 180, "y": 170 },
+        "applicationFolderPosition": { "x": 480, "y": 170 },
+        "windowSize": { "width": 660, "height": 400 }
+      },
+      "signingIdentity": null,
+      "entitlements": null
     },
     "linux": {
       "deb": {
-        "desktopTemplate": null
+        "desktopTemplate": null,
+        "section": "utils",
+        "priority": "optional",
+        "depends": ["libgtk-3-0", "libwebkit2gtk-4.1-0", "libappindicator3-1", "librsvg2-0"]
+      },
+      "appimage": {
+        "bundleMediaFramework": false
       }
     }
   },
@@ -65,6 +85,11 @@
         "https://github.com/LIEJINYAN/novel-editor/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHJlcXVpcmVkCkJSVEY0SEVMR1BBV1JFR0FLRVIgWkhRVTM2WlFCWVdWUFNZWlBTR0hTRURKQ1dKQ1dKQ1dKQ1dKQ1dKQ1dKQw=="
-    }
+    },
+    "global-shortcut": {},
+    "window-state": {},
+    "notification": {},
+    "dialog": {},
+    "deep-link": {}
   }
 }

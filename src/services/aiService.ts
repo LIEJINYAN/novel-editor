@@ -10,6 +10,13 @@ interface AIConfig {
   maxRetries?: number
 }
 
+interface APIMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool'
+  content: string
+  tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>
+  tool_call_id?: string
+}
+
 interface QueueItem {
   id: string
   prompt: string
@@ -18,6 +25,19 @@ interface QueueItem {
   signal?: AbortSignal
   reject: (error: Error) => void
   resolve: (value: string) => void
+  tools?: Array<{ name: string; description: string; parameters: any }>
+  apiTools?: Array<{ type: 'function'; function: { name: string; description: string; parameters: any } }>
+  messages?: APIMessage[]
+  temperature?: number
+}
+
+type QueueEventType = 'status-change' | 'request-start' | 'request-end' | 'request-error'
+type QueueEventHandler = (status: { pending: number; active: number }) => void
+
+interface QueueEventEmitter {
+  on: (event: QueueEventType, handler: QueueEventHandler) => () => void
+  off: (event: QueueEventType, handler: QueueEventHandler) => void
+  emit: (event: QueueEventType, data?: any) => void
 }
 
 const STORAGE_KEY = 'novel-engine-ai-config'
@@ -28,6 +48,28 @@ const DEFAULT_MAX_CONCURRENT = 2
 let activeRequests = 0
 const requestQueue: QueueItem[] = []
 let requestIdCounter = 0
+
+const eventListeners = new Map<QueueEventType, Set<QueueEventHandler>>()
+
+function createEventEmitter(): QueueEventEmitter {
+  return {
+    on(event, handler) {
+      if (!eventListeners.has(event)) {
+        eventListeners.set(event, new Set())
+      }
+      eventListeners.get(event)!.add(handler)
+      return () => eventListeners.get(event)?.delete(handler)
+    },
+    off(event, handler) {
+      eventListeners.get(event)?.delete(handler)
+    },
+    emit(event, data) {
+      eventListeners.get(event)?.forEach((handler) => handler(data))
+    },
+  }
+}
+
+export const queueEvents = createEventEmitter()
 
 export function getAIConfig(): AIConfig | null {
   try {
@@ -64,6 +106,10 @@ function buildApiUrl(baseUrl: string): string {
   return `${trimmed}/v1/chat/completions`
 }
 
+function emitStatusChange() {
+  queueEvents.emit('status-change', { pending: requestQueue.length, active: activeRequests })
+}
+
 function processQueue(): void {
   if (requestQueue.length === 0 || activeRequests >= (getAIConfig()?.maxConcurrent || DEFAULT_MAX_CONCURRENT)) {
     return
@@ -73,9 +119,14 @@ function processQueue(): void {
   if (!item) return
 
   activeRequests++
+  emitStatusChange()
+  queueEvents.emit('request-start', { id: item.id })
+
   executeRequest(item)
     .finally(() => {
       activeRequests--
+      emitStatusChange()
+      queueEvents.emit('request-end', { id: item.id })
       processQueue()
     })
 }
@@ -103,17 +154,38 @@ async function executeRequest(item: QueueItem): Promise<void> {
       }
 
       const url = buildApiUrl(config.baseUrl)
+      const requestBody: any = {
+        model: config.model || 'gpt-3.5-turbo',
+        messages: item.messages && item.messages.length > 0
+          ? item.messages
+          : [{ role: 'user', content: fullPrompt }],
+        stream: true,
+      }
+
+      if (item.temperature !== undefined) {
+        requestBody.temperature = item.temperature
+      }
+
+      if (item.apiTools && item.apiTools.length > 0) {
+        requestBody.tools = item.apiTools
+      } else if (item.tools && item.tools.length > 0) {
+        requestBody.tools = item.tools.map((t) => ({
+          type: 'function',
+          function: {
+            name: t.name,
+            description: t.description,
+            parameters: t.parameters,
+          },
+        }))
+      }
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${config.apiKey}`,
         },
-        body: JSON.stringify({
-          model: config.model || 'gpt-3.5-turbo',
-          messages: [{ role: 'user', content: fullPrompt }],
-          stream: true,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       })
 
@@ -128,6 +200,8 @@ async function executeRequest(item: QueueItem): Promise<void> {
       const decoder = new TextDecoder()
       let fullText = ''
 
+      const toolCallAccumulator = new Map<number, { id: string; name: string; arguments: string }>()
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -137,19 +211,60 @@ async function executeRequest(item: QueueItem): Promise<void> {
         for (const line of lines) {
           const data = line.slice(6).trim()
           if (data === '[DONE]') {
+            for (const [, tc] of toolCallAccumulator) {
+              try {
+                const args = tc.arguments ? JSON.parse(tc.arguments) : {}
+                const toolCallText = `\`\`\`tool-call\n${JSON.stringify({ id: tc.id, name: tc.name, args })}\n\`\`\``
+                fullText += toolCallText
+                item.onChunk(toolCallText)
+              } catch {
+                const toolCallText = `\`\`\`tool-call\n${JSON.stringify({ id: tc.id, name: tc.name, args: {} })}\n\`\`\``
+                fullText += toolCallText
+                item.onChunk(toolCallText)
+              }
+            }
             item.resolve(fullText)
             return
           }
           try {
             const parsed = JSON.parse(data)
-            const content = parsed.choices?.[0]?.delta?.content || ''
+            const choice = parsed.choices?.[0]
+            const content = choice?.delta?.content || ''
+            const toolCalls = choice?.delta?.tool_calls
+
             if (content) {
               fullText += content
               item.onChunk(content)
             }
+
+            if (toolCalls && toolCalls.length > 0) {
+              for (const tc of toolCalls) {
+                const idx = tc.index ?? 0
+                if (!toolCallAccumulator.has(idx)) {
+                  toolCallAccumulator.set(idx, { id: tc.id || '', name: tc.function?.name || '', arguments: '' })
+                }
+                const existing = toolCallAccumulator.get(idx)!
+                if (tc.id) existing.id = tc.id
+                if (tc.function?.name) existing.name = tc.function.name
+                if (tc.function?.arguments) existing.arguments += tc.function.arguments
+              }
+            }
           } catch {
             // skip malformed chunks
           }
+        }
+      }
+
+      for (const [, tc] of toolCallAccumulator) {
+        try {
+          const args = tc.arguments ? JSON.parse(tc.arguments) : {}
+          const toolCallText = `\`\`\`tool-call\n${JSON.stringify({ id: tc.id, name: tc.name, args })}\n\`\`\``
+          fullText += toolCallText
+          item.onChunk(toolCallText)
+        } catch {
+          const toolCallText = `\`\`\`tool-call\n${JSON.stringify({ id: tc.id, name: tc.name, args: {} })}\n\`\`\``
+          fullText += toolCallText
+          item.onChunk(toolCallText)
         }
       }
 
@@ -172,7 +287,11 @@ export async function aiCompleteStream(
   prompt: string,
   context: string,
   onChunk: (text: string) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  tools?: Array<{ name: string; description: string; parameters: any }>,
+  apiTools?: Array<{ type: 'function'; function: { name: string; description: string; parameters: any } }>,
+  messages?: APIMessage[],
+  temperature?: number,
 ): Promise<string> {
   const config = getAIConfig()
   if (!config) throw new Error('请先配置 AI API 密钥')
@@ -186,6 +305,10 @@ export async function aiCompleteStream(
       signal,
       resolve,
       reject,
+      tools,
+      apiTools,
+      messages,
+      temperature,
     }
 
     requestQueue.push(item)
@@ -200,6 +323,31 @@ export function getQueueStatus(): { pending: number; active: number } {
   }
 }
 
+export function cleanAIResponse(text: string): string {
+  let cleaned = text.trim()
+
+  cleaned = cleaned.replace(/^```(?:json|text|plain)?\s*\n?/i, '')
+  cleaned = cleaned.replace(/\n?```\s*$/i, '')
+
+  try {
+    const parsed = JSON.parse(cleaned)
+    if (typeof parsed === 'string') {
+      cleaned = parsed
+    } else if (parsed.content) {
+      cleaned = parsed.content
+    } else if (parsed.text) {
+      cleaned = parsed.text
+    }
+  } catch {}
+
+  cleaned = cleaned.replace(/^["']|["']$/g, '')
+
+  cleaned = cleaned.replace(/\\n/g, '\n')
+  cleaned = cleaned.replace(/\\t/g, '\t')
+
+  return cleaned.trim()
+}
+
 export function cancelAllRequests(): void {
   requestQueue.length = 0
   activeRequests = 0
@@ -209,57 +357,134 @@ export const AI_COMMANDS = {
   continueWriting: {
     label: '续写',
     icon: '✍️',
-    buildPrompt: (text: string) => `请根据以下上下文，自然地续写一段小说内容，保持风格一致：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的写作助手。请根据以下上下文，自然地续写一段内容，保持风格一致。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出你要写的文字。
+
+上下文：
+${text}
+
+续写内容：`,
   },
   polish: {
     label: '润色',
     icon: '✨',
-    buildPrompt: (text: string) => `请改进以下段落的文风和表达，使其更加流畅优美，保留原意：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的写作助手。请改进以下段落的文风和表达，使其更加流畅优美，保留原意。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出润色后的文字。
+
+原文：
+${text}
+
+润色后：`,
   },
   summarize: {
     label: '摘要',
     icon: '📝',
-    buildPrompt: (text: string) => `请为以下内容生成一段简短的摘要（3-5句话）：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的写作助手。请为以下内容生成一段简短的摘要（3-5句话）。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出摘要文字。
+
+内容：
+${text}
+
+摘要：`,
   },
   expand: {
     label: '扩写',
     icon: '🔍',
-    buildPrompt: (text: string) => `请在以下内容的基础上增加更多细节描写、对话或心理活动：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的写作助手。请在以下内容的基础上增加更多细节描写、对话或心理活动。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出扩写后的文字。
+
+原文：
+${text}
+
+扩写后：`,
   },
   shorten: {
     label: '精简',
     icon: '✂️',
-    buildPrompt: (text: string) => `请精简以下内容，保留核心信息：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的写作助手。请精简以下内容，保留核心信息。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出精简后的文字。
+
+原文：
+${text}
+
+精简后：`,
   },
   translateToEn: {
     label: '译英',
     icon: '🇺🇸',
-    buildPrompt: (text: string) => `请将以下中文内容翻译成英文，保持文学性：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的翻译助手。请将以下中文内容翻译成英文，保持文学性。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出英文翻译。
+
+中文：
+${text}
+
+英文翻译：`,
   },
   translateToZh: {
     label: '译中',
     icon: '🇨🇳',
-    buildPrompt: (text: string) => `请将以下英文内容翻译成中文，保持文学性：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的翻译助手。请将以下英文内容翻译成中文，保持文学性。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出中文翻译。
+
+英文：
+${text}
+
+中文翻译：`,
   },
   correctErrors: {
     label: '纠错',
     icon: '🔧',
-    buildPrompt: (text: string) => `请检查并纠正以下内容中的错别字、语法错误和标点符号错误：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的校对助手。请检查并纠正以下内容中的错别字、语法错误和标点符号错误。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出纠正后的文字。
+
+原文：
+${text}
+
+纠正后：`,
   },
   literaryStyle: {
     label: '文艺',
     icon: '🎨',
-    buildPrompt: (text: string) => `请将以下内容改写为文艺风格，增加修辞手法和文学性：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的写作助手。请将以下内容改写为文艺风格，增加修辞手法和文学性。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出改写后的文字。
+
+原文：
+${text}
+
+改写后：`,
   },
   casualStyle: {
     label: '口语',
     icon: '💬',
-    buildPrompt: (text: string) => `请将以下内容改写为轻松口语化的风格：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的写作助手。请将以下内容改写为轻松口语化的风格。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出改写后的文字。
+
+原文：
+${text}
+
+改写后：`,
   },
   formalStyle: {
     label: '正式',
     icon: '👔',
-    buildPrompt: (text: string) => `请将以下内容改写为正式书面语风格：\n\n${text}`,
+    buildPrompt: (text: string) => `你是一个专业的写作助手。请将以下内容改写为正式书面语风格。
+
+重要：只返回纯文本内容，不要返回JSON、代码块、标记语言或任何格式。直接输出改写后的文字。
+
+原文：
+${text}
+
+改写后：`,
   },
   suspenseStyle: {
     label: '悬疑',
