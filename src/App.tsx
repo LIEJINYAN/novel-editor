@@ -279,30 +279,30 @@ function App() {
   }, [])
 
   const commands: Command[] = useMemo(() => [
-    { id: 'save', label: t('menu.save'), icon: '💾', category: '文件', shortcut: 'Ctrl+S', action: handleSave },
-    { id: 'new-doc', label: t('menu.newDoc'), icon: '📄', category: '文件', shortcut: 'Ctrl+N', action: () => {} },
-    { id: 'search', label: t('menu.search'), icon: '🔍', category: '编辑', shortcut: 'Ctrl+F', action: () => setSearchOpen(true) },
-    { id: 'find-replace', label: t('editor.findReplace'), icon: '🔎', category: '编辑', shortcut: 'Ctrl+H', action: () => setFindReplaceOpen(true) },
-    { id: 'toggle-sidebar', label: t('menu.toggleSidebar'), icon: '☰', category: '视图', action: () => setSidebarOpen(!sidebarOpen) },
-    { id: 'toggle-ai', label: t('menu.toggleAIPanel'), icon: '🤖', category: '视图', shortcut: 'Ctrl+Shift+A', action: () => setAiPanelOpen(!aiPanelOpen) },
-    { id: 'toggle-theme', label: t('menu.toggleTheme'), icon: useThemeStore.getState().theme === 'dark' ? '☀️' : '🌙', category: '视图', action: toggleTheme },
-    { id: 'focus-mode', label: t('editor.focusMode'), icon: '🎯', category: '视图', action: toggleFocusMode },
-    { id: 'typewriter', label: t('editor.typewriter'), icon: '⌨️', category: '视图', action: toggleTypewriterMode },
-    { id: 'fullscreen', label: '全屏', icon: '⛶', category: '视图', shortcut: 'F11', action: toggleFullscreen },
-    { id: 'outline', label: t('editor.outline'), icon: '📑', category: '视图', shortcut: 'Ctrl+Shift+O', action: () => setOutlinePanelOpen(true) },
-    { id: 'word-count', label: t('editor.wordCount'), icon: '📊', category: '视图', action: () => setWordCountOpen(true) },
-    { id: 'word-goal', label: t('editor.wordGoal'), icon: '🎯', category: '写作', action: () => setWordGoalOpen(true) },
-    { id: 'writing-stats', label: t('editor.writingStats'), icon: '📈', category: '写作', action: () => setWritingStatsOpen(true) },
-    { id: 'writing-chart', label: t('editor.writingChart'), icon: '📊', category: '写作', action: () => setWritingChartOpen(true) },
-    { id: 'writing-modes', label: t('editor.writingModes'), icon: '✍️', category: '写作', action: () => setWritingModesOpen(true) },
-    { id: 'templates', label: t('editor.documentTemplates'), icon: '📝', category: '写作', action: () => setTemplatesOpen(true) },
-    { id: 'reminder', label: t('editor.writingReminder'), icon: '🔔', category: '写作', action: () => setReminderOpen(true) },
-    { id: 'shortcuts', label: t('editor.shortcutsHelp'), icon: '❓', category: '帮助', shortcut: 'F1', action: () => setShortcutsHelpOpen(true) },
-    { id: 'settings', label: t('settings.title'), icon: '⚙️', category: '设置', action: () => setSettingsOpen(true) },
-    { id: 'plugin-market', label: t('editor.pluginMarket'), icon: '🧩', category: '扩展', action: () => setPluginMarketOpen(true) },
-    { id: 'clipboard', label: t('editor.clipboardHistory'), icon: '📋', category: '工具', action: () => setClipboardOpen(true) },
-    { id: 'version-history', label: t('editor.versionHistory'), icon: '🕐', category: '工具', action: () => setVersionHistoryOpen(true) },
-    { id: 'share', label: t('editor.documentShare'), icon: '📤', category: '工具', action: () => setShareOpen(true) },
+    { id: 'save', label: t('menu.save'), icon: '💾', category: t('categories.file'), shortcut: 'Ctrl+S', action: handleSave },
+    { id: 'new-doc', label: t('menu.newDoc'), icon: '📄', category: t('categories.file'), shortcut: 'Ctrl+N', action: () => {} },
+    { id: 'search', label: t('menu.search'), icon: '🔍', category: t('categories.edit'), shortcut: 'Ctrl+F', action: () => setSearchOpen(true) },
+    { id: 'find-replace', label: t('editor.findReplace'), icon: '🔎', category: t('categories.edit'), shortcut: 'Ctrl+H', action: () => setFindReplaceOpen(true) },
+    { id: 'toggle-sidebar', label: t('menu.toggleSidebar'), icon: '☰', category: t('categories.view'), action: () => setSidebarOpen(!sidebarOpen) },
+    { id: 'toggle-ai', label: t('menu.toggleAIPanel'), icon: '🤖', category: t('categories.view'), shortcut: 'Ctrl+Shift+A', action: () => setAiPanelOpen(!aiPanelOpen) },
+    { id: 'toggle-theme', label: t('menu.toggleTheme'), icon: useThemeStore.getState().theme === 'dark' ? '☀️' : '🌙', category: t('categories.view'), action: toggleTheme },
+    { id: 'focus-mode', label: t('editor.focusMode'), icon: '🎯', category: t('categories.view'), action: toggleFocusMode },
+    { id: 'typewriter', label: t('editor.typewriter'), icon: '⌨️', category: t('categories.view'), action: toggleTypewriterMode },
+    { id: 'fullscreen', label: t('fullscreen'), icon: '⛶', category: t('categories.view'), shortcut: 'F11', action: toggleFullscreen },
+    { id: 'outline', label: t('editor.outline'), icon: '📑', category: t('categories.view'), shortcut: 'Ctrl+Shift+O', action: () => setOutlinePanelOpen(true) },
+    { id: 'word-count', label: t('editor.wordCount'), icon: '📊', category: t('categories.view'), action: () => setWordCountOpen(true) },
+    { id: 'word-goal', label: t('editor.wordGoal'), icon: '🎯', category: t('categories.writing'), action: () => setWordGoalOpen(true) },
+    { id: 'writing-stats', label: t('editor.writingStats'), icon: '📈', category: t('categories.writing'), action: () => setWritingStatsOpen(true) },
+    { id: 'writing-chart', label: t('editor.writingChart'), icon: '📊', category: t('categories.writing'), action: () => setWritingChartOpen(true) },
+    { id: 'writing-modes', label: t('editor.writingModes'), icon: '✍️', category: t('categories.writing'), action: () => setWritingModesOpen(true) },
+    { id: 'templates', label: t('editor.documentTemplates'), icon: '📝', category: t('categories.writing'), action: () => setTemplatesOpen(true) },
+    { id: 'reminder', label: t('editor.writingReminder'), icon: '🔔', category: t('categories.writing'), action: () => setReminderOpen(true) },
+    { id: 'shortcuts', label: t('editor.shortcutsHelp'), icon: '❓', category: t('categories.help'), shortcut: 'F1', action: () => setShortcutsHelpOpen(true) },
+    { id: 'settings', label: t('settings.title'), icon: '⚙️', category: t('categories.settings'), action: () => setSettingsOpen(true) },
+    { id: 'plugin-market', label: t('editor.pluginMarket'), icon: '🧩', category: t('categories.extensions'), action: () => setPluginMarketOpen(true) },
+    { id: 'clipboard', label: t('editor.clipboardHistory'), icon: '📋', category: t('categories.tools'), action: () => setClipboardOpen(true) },
+    { id: 'version-history', label: t('editor.versionHistory'), icon: '🕐', category: t('categories.tools'), action: () => setVersionHistoryOpen(true) },
+    { id: 'share', label: t('editor.documentShare'), icon: '📤', category: t('categories.tools'), action: () => setShareOpen(true) },
   ], [handleSave, sidebarOpen, aiPanelOpen, toggleTheme, toggleFocusMode, toggleTypewriterMode, toggleFullscreen, setSidebarOpen, setAiPanelOpen])
 
   const LoadingFallback = () => (
@@ -404,7 +404,7 @@ function App() {
           />
         )}
 
-        <main className="flex-1 flex flex-col min-w-0" role="main" aria-label="编辑器">
+        <main id="main-content" className="flex-1 flex flex-col min-w-0" role="main" aria-label="编辑器" tabIndex={-1}>
           {!isLoaded ? (
             <EditorSkeleton />
           ) : currentDoc ? (

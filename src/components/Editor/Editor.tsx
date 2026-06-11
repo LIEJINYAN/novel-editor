@@ -206,7 +206,7 @@ const Editor = forwardRef<EditorRef, Props>(({ docId, initialContent, onChange, 
         />
       </div>
       <div className="flex-1 overflow-y-auto">
-        <EditorContent editor={editor} className="min-h-full" />
+        <EditorContent editor={editor} className="min-h-full" aria-label="文档编辑区域" />
       </div>
       {isConnected && <CollaboratorBar />}
     </div>
@@ -217,11 +217,11 @@ function CollaboratorBar() {
   const collaborators = useCollaborationStore((s) => s.collaborators)
 
   return (
-    <div className="flex items-center gap-2 px-2 py-1 border-t border-editor-border bg-editor-surface/50">
+    <div className="flex items-center gap-2 px-2 py-1 border-t border-editor-border bg-editor-surface/50" role="status" aria-label="协作者信息">
       <span className="text-[10px] text-editor-muted">协作:</span>
       {collaborators.map((c) => (
         <div key={c.id} className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} aria-hidden="true" />
           <span className="text-[10px] text-editor-muted">{c.name}</span>
         </div>
       ))}

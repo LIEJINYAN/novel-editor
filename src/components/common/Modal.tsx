@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, type ReactNode } from 'react'
+import { t } from '../../i18n'
 
 interface ModalProps {
   open: boolean
@@ -116,9 +117,9 @@ export function ModalHeader({ title, onClose, icon }: ModalHeaderProps) {
       <button
         onClick={onClose}
         className="text-editor-muted hover:text-editor-text p-1 rounded hover:bg-editor-bg transition-colors"
-        aria-label="关闭"
+        aria-label={`${t('accessibility.closeDialog')}${title || ''}`}
       >
-        ✕
+        <span aria-hidden="true">✕</span>
       </button>
     </div>
   )

@@ -7,6 +7,7 @@ import { useCustomThemeStore, DEFAULT_COLORS, DARK_COLORS } from '../../store/cu
 import { useShortcutStore } from '../../store/shortcutStore'
 import { getCloudConfig, saveCloudConfig, clearCloudConfig, testConnection, syncToCloud, getSyncStatus } from '../../services/cloudSync'
 import Modal from '../common/Modal'
+import { t } from '../../i18n'
 import type { ThemeColors } from '../../store/customThemeStore'
 import type { CloudProvider } from '../../services/cloudSync'
 import type { SaveStrategy } from '../../store/autoSaveStore'
@@ -53,13 +54,13 @@ export default function SettingsPanel({ onClose }: Props) {
   }, [])
 
   const tabs: { id: SettingsTab; label: string; icon: string }[] = [
-    { id: 'appearance', label: '外观', icon: '🎨' },
-    { id: 'theme', label: '主题', icon: '🎭' },
-    { id: 'editor', label: '编辑器', icon: '✏️' },
-    { id: 'focus', label: '专注模式', icon: '🎯' },
-    { id: 'goals', label: '字数目标', icon: '📊' },
-    { id: 'shortcuts', label: '快捷键', icon: '⌨️' },
-    { id: 'cloud', label: '云同步', icon: '☁️' },
+    { id: 'appearance', label: t('settings.appearance'), icon: '🎨' },
+    { id: 'theme', label: t('settings.theme'), icon: '🎭' },
+    { id: 'editor', label: t('settings.editor'), icon: '✏️' },
+    { id: 'focus', label: t('settings.focus'), icon: '🎯' },
+    { id: 'goals', label: t('settings.goals'), icon: '📊' },
+    { id: 'shortcuts', label: t('settings.shortcuts'), icon: '⌨️' },
+    { id: 'cloud', label: t('settings.cloud'), icon: '☁️' },
   ]
 
   const { shortcuts, editingId, setEditing, updateShortcut, resetShortcut, resetAll } = useShortcutStore()
@@ -173,7 +174,7 @@ export default function SettingsPanel({ onClose }: Props) {
   return (
     <Modal open={true} onClose={onClose} title="设置" size="lg">
       <div className="flex h-[70vh]">
-        <div className="w-32 bg-editor-bg border-r border-editor-border flex flex-col overflow-y-auto">
+        <div className="w-32 bg-editor-bg border-r border-editor-border flex flex-col overflow-y-auto" role="tablist" aria-label="设置分类" aria-orientation="vertical">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -183,17 +184,24 @@ export default function SettingsPanel({ onClose }: Props) {
                   ? 'bg-editor-accent text-editor-bg'
                   : 'text-editor-muted hover:text-editor-text hover:bg-editor-surface'
               }`}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`settings-panel-${tab.id}`}
+              id={`settings-tab-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
             >
-              <span className="mr-2">{tab.icon}</span>
+              <span className="mr-2" aria-hidden="true">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto" role="tabpanel" id={`settings-panel-${activeTab}`} aria-labelledby={`settings-tab-${activeTab}`}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-editor-border">
-            <h2 className="text-sm font-semibold text-editor-text">⚙️ 设置</h2>
-            <button onClick={onClose} className="text-editor-muted hover:text-editor-text">✕</button>
+            <h2 className="text-sm font-semibold text-editor-text"><span aria-hidden="true">⚙️</span> 设置</h2>
+            <button onClick={onClose} className="text-editor-muted hover:text-editor-text" aria-label="关闭设置面板">
+              <span aria-hidden="true">✕</span>
+            </button>
           </div>
 
           <div className="p-4">
@@ -202,8 +210,8 @@ export default function SettingsPanel({ onClose }: Props) {
                 <h3 className="text-sm font-medium text-editor-text">外观设置</h3>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-xs text-editor-muted">主题模式</span>
-                  <button onClick={toggleTheme} className={`px-3 py-1.5 text-xs rounded transition-colors ${theme === 'dark' ? 'bg-blue-500 text-white' : 'bg-editor-border text-editor-text'}`}>
-                    {theme === 'dark' ? '🌙 深色' : '☀️ 浅色'}
+                  <button onClick={toggleTheme} className={`px-3 py-1.5 text-xs rounded transition-colors ${theme === 'dark' ? 'bg-blue-500 text-white' : 'bg-editor-border text-editor-text'}`} aria-label={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}>
+                    <span aria-hidden="true">{theme === 'dark' ? '🌙 深色' : '☀️ 浅色'}</span>
                   </button>
                 </div>
               </div>
@@ -218,8 +226,9 @@ export default function SettingsPanel({ onClose }: Props) {
                       key={preset.name}
                       onClick={() => setCustomColors(preset.colors)}
                       className="p-2 text-xs border border-editor-border rounded hover:border-editor-accent transition-colors"
+                      aria-label={`应用${preset.name}主题`}
                     >
-                      <div className="flex gap-1 mb-1">
+                      <div className="flex gap-1 mb-1" aria-hidden="true">
                         <div className="w-3 h-3 rounded" style={{ background: preset.colors.background }} />
                         <div className="w-3 h-3 rounded" style={{ background: preset.colors.surface }} />
                         <div className="w-3 h-3 rounded" style={{ background: preset.colors.accent }} />
@@ -238,13 +247,14 @@ export default function SettingsPanel({ onClose }: Props) {
                           value={customColors?.[key] || DEFAULT_COLORS[key]}
                           onChange={(e) => setCustomColors({ ...(customColors || DEFAULT_COLORS), [key]: e.target.value })}
                           className="w-6 h-6 rounded cursor-pointer"
+                          aria-label={`自定义${colorLabels[key]}`}
                         />
                         <span className="text-xs text-editor-muted">{colorLabels[key]}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-                <button onClick={resetCustomColors} className="w-full py-2 text-xs text-red-500 hover:bg-red-500/10 rounded">
+                <button onClick={resetCustomColors} className="w-full py-2 text-xs text-red-500 hover:bg-red-500/10 rounded" aria-label="重置为主题默认颜色">
                   重置为默认
                 </button>
               </div>
@@ -255,7 +265,7 @@ export default function SettingsPanel({ onClose }: Props) {
                 <h3 className="text-sm font-medium text-editor-text">编辑器设置</h3>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-xs text-editor-muted">自动换行</span>
-                  <button onClick={toggleWordWrap} className={`w-10 h-5 rounded-full transition-colors relative ${wordWrap ? 'bg-blue-500' : 'bg-editor-border'}`}>
+                  <button onClick={toggleWordWrap} className={`w-10 h-5 rounded-full transition-colors relative ${wordWrap ? 'bg-blue-500' : 'bg-editor-border'}`} role="switch" aria-checked={wordWrap} aria-label="自动换行">
                     <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${wordWrap ? 'translate-x-5' : 'translate-x-0.5'}`} />
                   </button>
                 </div>
@@ -263,21 +273,21 @@ export default function SettingsPanel({ onClose }: Props) {
                   <h4 className="text-xs font-medium text-editor-muted mb-2">自动保存</h4>
                   <div className="flex items-center justify-between py-2">
                     <span className="text-xs text-editor-muted">启用自动保存</span>
-                    <button onClick={toggleAutoSave} className={`w-10 h-5 rounded-full transition-colors relative ${autoSaveEnabled ? 'bg-blue-500' : 'bg-editor-border'}`}>
+                    <button onClick={toggleAutoSave} className={`w-10 h-5 rounded-full transition-colors relative ${autoSaveEnabled ? 'bg-blue-500' : 'bg-editor-border'}`} role="switch" aria-checked={autoSaveEnabled} aria-label="启用自动保存">
                       <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${autoSaveEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
                     </button>
                   </div>
                   <div className="flex items-center justify-between py-2">
-                    <span className="text-xs text-editor-muted">保存策略</span>
-                    <select value={strategy} onChange={(e) => setStrategy(e.target.value as SaveStrategy)} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
+                    <label className="text-xs text-editor-muted" htmlFor="save-strategy">保存策略</label>
+                    <select id="save-strategy" value={strategy} onChange={(e) => setStrategy(e.target.value as SaveStrategy)} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
                       <option value="auto">自动</option>
                       <option value="smart">智能</option>
                       <option value="manual">手动</option>
                     </select>
                   </div>
                   <div className="flex items-center justify-between py-2">
-                    <span className="text-xs text-editor-muted">保存间隔</span>
-                    <select value={interval} onChange={(e) => setAutoSaveInterval(parseInt(e.target.value))} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
+                    <label className="text-xs text-editor-muted" htmlFor="save-interval">保存间隔</label>
+                    <select id="save-interval" value={interval} onChange={(e) => setAutoSaveInterval(parseInt(e.target.value))} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
                       <option value={10000}>10秒</option>
                       <option value={30000}>30秒</option>
                       <option value={60000}>1分钟</option>
@@ -292,8 +302,8 @@ export default function SettingsPanel({ onClose }: Props) {
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-editor-text">专注模式设置</h3>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-xs text-editor-muted">工具栏显示模式</span>
-                    <select value={focusToolbarMode} onChange={(e) => setFocusToolbarMode(e.target.value as FocusToolbarMode)} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
+                  <label className="text-xs text-editor-muted" htmlFor="focus-toolbar-mode">工具栏显示模式</label>
+                    <select id="focus-toolbar-mode" value={focusToolbarMode} onChange={(e) => setFocusToolbarMode(e.target.value as FocusToolbarMode)} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
                     <option value="auto">悬停显示</option>
                     <option value="always">始终显示</option>
                     <option value="never">从不显示</option>
@@ -302,8 +312,8 @@ export default function SettingsPanel({ onClose }: Props) {
                 <div className="border-t border-editor-border pt-4">
                   <h4 className="text-xs font-medium text-editor-muted mb-2">快速操作</h4>
                   <div className="space-y-2">
-                    <button onClick={toggleFocusMode} className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg rounded">🎯 切换专注模式 (Ctrl+Shift+F)</button>
-                    <button onClick={toggleTypewriterMode} className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg rounded">⌨️ 切换打字机模式 (Ctrl+Shift+T)</button>
+                    <button onClick={toggleFocusMode} className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg rounded"><span aria-hidden="true">🎯</span> 切换专注模式 (Ctrl+Shift+F)</button>
+                    <button onClick={toggleTypewriterMode} className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg rounded"><span aria-hidden="true">⌨️</span> 切换打字机模式 (Ctrl+Shift+T)</button>
                   </div>
                 </div>
               </div>
@@ -314,16 +324,16 @@ export default function SettingsPanel({ onClose }: Props) {
                 <h3 className="text-sm font-medium text-editor-text">字数目标设置</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-2">
-                    <span className="text-xs text-editor-muted">📅 每日目标</span>
-                    <input type="number" value={goals.daily} onChange={(e) => setDailyGoal(parseInt(e.target.value, 10) || 0)} className="w-24 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text text-right" />
+                    <label className="text-xs text-editor-muted" htmlFor="daily-goal"><span aria-hidden="true">📅</span> 每日目标</label>
+                    <input id="daily-goal" type="number" value={goals.daily} onChange={(e) => setDailyGoal(parseInt(e.target.value, 10) || 0)} className="w-24 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text text-right" aria-label="每日字数目标" />
                   </div>
                   <div className="flex items-center justify-between py-2">
-                    <span className="text-xs text-editor-muted">📖 章节目标</span>
-                    <input type="number" value={goals.chapter} onChange={(e) => setChapterGoal(parseInt(e.target.value, 10) || 0)} className="w-24 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text text-right" />
+                    <label className="text-xs text-editor-muted" htmlFor="chapter-goal"><span aria-hidden="true">📖</span> 章节目标</label>
+                    <input id="chapter-goal" type="number" value={goals.chapter} onChange={(e) => setChapterGoal(parseInt(e.target.value, 10) || 0)} className="w-24 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text text-right" aria-label="章节字数目标" />
                   </div>
                   <div className="flex items-center justify-between py-2">
-                    <span className="text-xs text-editor-muted">📚 小说总目标</span>
-                    <input type="number" value={goals.novel} onChange={(e) => setNovelGoal(parseInt(e.target.value, 10) || 0)} className="w-24 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text text-right" />
+                    <label className="text-xs text-editor-muted" htmlFor="novel-goal"><span aria-hidden="true">📚</span> 小说总目标</label>
+                    <input id="novel-goal" type="number" value={goals.novel} onChange={(e) => setNovelGoal(parseInt(e.target.value, 10) || 0)} className="w-24 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text text-right" aria-label="小说总字数目标" />
                   </div>
                 </div>
               </div>
@@ -342,6 +352,7 @@ export default function SettingsPanel({ onClose }: Props) {
                     <button
                       onClick={resetAll}
                       className="text-[10px] px-2 py-1 text-editor-muted hover:text-editor-text hover:bg-editor-bg rounded"
+                      aria-label="恢复所有快捷键默认设置"
                     >
                       恢复默认
                     </button>
@@ -364,15 +375,17 @@ export default function SettingsPanel({ onClose }: Props) {
                           onClick={() => handleStartRecord(shortcut.id)}
                           className="text-[10px] px-1.5 py-0.5 text-editor-accent hover:bg-editor-bg rounded"
                           title="点击修改"
+                          aria-label={`修改快捷键: ${shortcut.label}`}
                         >
-                          ✏️
+                          <span aria-hidden="true">✏️</span>
                         </button>
                         <button
                           onClick={() => resetShortcut(shortcut.id)}
                           className="text-[10px] px-1.5 py-0.5 text-editor-muted hover:text-editor-text hover:bg-editor-bg rounded"
                           title="恢复默认"
+                          aria-label={`恢复默认快捷键: ${shortcut.label}`}
                         >
-                          ↩
+                          <span aria-hidden="true">↩</span>
                         </button>
                       </div>
                     </div>
@@ -385,8 +398,8 @@ export default function SettingsPanel({ onClose }: Props) {
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-editor-text">云同步设置</h3>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-xs text-editor-muted">同步服务</span>
-                  <select value={cloudProvider} onChange={(e) => setCloudProvider(e.target.value as CloudProvider)} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
+                  <label className="text-xs text-editor-muted" htmlFor="cloud-provider">同步服务</label>
+                  <select id="cloud-provider" value={cloudProvider} onChange={(e) => setCloudProvider(e.target.value as CloudProvider)} className="px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text">
                     <option value="webdav">WebDAV</option>
                     <option value="github">GitHub</option>
                     <option value="gitee">Gitee</option>
@@ -395,42 +408,42 @@ export default function SettingsPanel({ onClose }: Props) {
                 {cloudProvider === 'webdav' && (
                   <>
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-xs text-editor-muted">服务器地址</span>
-                      <input type="url" value={webdavServer} onChange={(e) => setWebdavServer(e.target.value)} placeholder="https://dav.example.com" className="w-48 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
+                      <label className="text-xs text-editor-muted" htmlFor="webdav-server">服务器地址</label>
+                      <input id="webdav-server" type="url" value={webdavServer} onChange={(e) => setWebdavServer(e.target.value)} placeholder="https://dav.example.com" className="w-48 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
                     </div>
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-xs text-editor-muted">用户名</span>
-                      <input type="text" value={webdavUsername} onChange={(e) => setWebdavUsername(e.target.value)} className="w-48 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
+                      <label className="text-xs text-editor-muted" htmlFor="webdav-username">用户名</label>
+                      <input id="webdav-username" type="text" value={webdavUsername} onChange={(e) => setWebdavUsername(e.target.value)} className="w-48 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
                     </div>
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-xs text-editor-muted">密码</span>
-                      <input type="password" value={webdavPassword} onChange={(e) => setWebdavPassword(e.target.value)} className="w-48 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
+                      <label className="text-xs text-editor-muted" htmlFor="webdav-password">密码</label>
+                      <input id="webdav-password" type="password" value={webdavPassword} onChange={(e) => setWebdavPassword(e.target.value)} className="w-48 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
                     </div>
                   </>
                 )}
                 {(cloudProvider === 'github' || cloudProvider === 'gitee') && (
                   <>
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-xs text-editor-muted">Token</span>
-                      <input type="password" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} placeholder="ghp_xxxx" className="w-48 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
+                      <label className="text-xs text-editor-muted" htmlFor="github-token">Token</label>
+                      <input id="github-token" type="password" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} placeholder="ghp_xxxx" className="w-48 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
                     </div>
                     <div className="flex items-center justify-between py-2">
-                      <span className="text-xs text-editor-muted">仓库</span>
-                      <input type="text" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} placeholder="user/repo" className="w-48 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
+                      <label className="text-xs text-editor-muted" htmlFor="github-repo">仓库</label>
+                      <input id="github-repo" type="text" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} placeholder="user/repo" className="w-48 px-2 py-1 text-xs bg-editor-bg border border-editor-border rounded text-editor-text" />
                     </div>
                   </>
                 )}
                 {syncStatus && <div className="text-xs text-center py-2">{syncStatus}</div>}
                 {lastSync && <div className="text-xs text-editor-muted text-center">上次同步: {new Date(lastSync).toLocaleString()}</div>}
                 <div className="flex gap-2">
-                  <button onClick={handleTestConnection} disabled={isTesting} className="flex-1 py-2 text-xs bg-editor-bg border border-editor-border rounded hover:bg-editor-surface disabled:opacity-50">
+                  <button onClick={handleTestConnection} disabled={isTesting} className="flex-1 py-2 text-xs bg-editor-bg border border-editor-border rounded hover:bg-editor-surface disabled:opacity-50" aria-label="测试云同步连接">
                     {isTesting ? '测试中...' : '测试连接'}
                   </button>
-                  <button onClick={handleSaveCloudConfig} className="flex-1 py-2 text-xs bg-editor-accent text-editor-bg rounded hover:opacity-90">
+                  <button onClick={handleSaveCloudConfig} className="flex-1 py-2 text-xs bg-editor-accent text-editor-bg rounded hover:opacity-90" aria-label="保存云同步配置">
                     保存配置
                   </button>
                 </div>
-                <button onClick={handleSync} disabled={isSyncing} className="w-full py-2 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50">
+                <button onClick={handleSync} disabled={isSyncing} className="w-full py-2 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50" aria-label="立即同步到云端">
                   {isSyncing ? '同步中...' : '立即同步'}
                 </button>
               </div>

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { getAIConfig } from '../services/aiService'
+import { t } from '../i18n'
 
 interface ImageResult {
   url: string
@@ -13,7 +14,7 @@ export function useAIImageGeneration() {
   const generateImage = useCallback(async (prompt: string): Promise<ImageResult | null> => {
     const config = getAIConfig()
     if (!config) {
-      setError('请先配置AI API')
+      setError(t('agent.configureAPIPlaceholder'))
       return null
     }
 
@@ -38,7 +39,7 @@ export function useAIImageGeneration() {
 
       if (!response.ok) {
         const err = await response.text()
-        throw new Error(`图片生成失败: ${err}`)
+        throw new Error(`${t('image.generationFailed')}: ${err}`)
       }
 
       const data = await response.json()

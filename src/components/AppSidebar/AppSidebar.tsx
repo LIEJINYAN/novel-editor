@@ -35,12 +35,14 @@ export default function AppSidebar({ editor, onOutlinePanelOpen }: AppSidebarPro
           aria-label="侧边栏"
         >
           {isMobile && sidebarOpen && (
-            <div className="fixed inset-0 bg-black/30 z-30" onClick={() => setSidebarOpen(false)} />
+            <div className="fixed inset-0 bg-black/30 z-30" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
           )}
           <div className="border-b border-editor-border relative z-10">
             <div className="flex items-center justify-between px-3 py-2">
               <span className="text-xs font-semibold text-editor-muted uppercase tracking-wider">{t('sidebar.documentTree')}</span>
-              <button className="text-xs text-editor-muted hover:text-editor-text" onClick={onOutlinePanelOpen} title="展开大纲面板">⛶</button>
+              <button className="text-xs text-editor-muted hover:text-editor-text" onClick={onOutlinePanelOpen} title="展开大纲面板" aria-label="展开大纲面板">
+                <span aria-hidden="true">⛶</span>
+              </button>
             </div>
             <DocumentOutline editor={editor} onNavigate={(_pos: number) => {}} />
           </div>

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { t } from '../i18n'
 
 interface VoiceInputState {
   isListening: boolean
@@ -19,7 +20,7 @@ export function useVoiceInput() {
 
   const startListening = useCallback((language = 'zh-CN') => {
     if (!state.isSupported) {
-      setState((prev) => ({ ...prev, error: '浏览器不支持语音识别' }))
+      setState((prev) => ({ ...prev, error: t('voice.unsupported') }))
       return
     }
 
@@ -57,7 +58,7 @@ export function useVoiceInput() {
       setState((prev) => ({
         ...prev,
         isListening: false,
-        error: `语音识别错误: ${event.error}`,
+        error: `${t('voice.error')}: ${event.error}`,
       }))
     }
 

@@ -6,6 +6,7 @@ import { readTextFile, writeTextFile, exists, readDir, mkdir, remove, rename } f
 import { writeText, readText } from '@tauri-apps/plugin-clipboard-manager'
 import { sendNotification } from '@tauri-apps/plugin-notification'
 import { check } from '@tauri-apps/plugin-updater'
+import { t } from '../i18n'
 
 let restartFn: (() => void) | null = null
 
@@ -52,9 +53,9 @@ export async function openFileDialog(): Promise<string | null> {
   const selected = await open({
     multiple: false,
     filters: [
-      { name: '文本文件', extensions: ['txt', 'md', 'markdown'] },
-      { name: '小说文件', extensions: ['novel', 'json'] },
-      { name: '所有文件', extensions: ['*'] },
+      { name: t('tauri.textFile'), extensions: ['txt', 'md', 'markdown'] },
+      { name: t('tauri.novelFile'), extensions: ['novel', 'json'] },
+      { name: t('tauri.allFiles'), extensions: ['*'] },
     ],
   })
   if (typeof selected === 'string') return selected
@@ -72,9 +73,9 @@ export async function saveFileDialog(defaultName?: string): Promise<string | nul
     defaultPath: defaultName,
     filters: [
       { name: 'Markdown', extensions: ['md'] },
-      { name: '文本文件', extensions: ['txt'] },
+      { name: t('tauri.textFile'), extensions: ['txt'] },
       { name: 'HTML', extensions: ['html'] },
-      { name: '所有文件', extensions: ['*'] },
+      { name: t('tauri.allFiles'), extensions: ['*'] },
     ],
   })
   return path

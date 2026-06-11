@@ -20,11 +20,14 @@ export default function LanguageSwitcher() {
         className="text-editor-muted hover:text-editor-text ml-3 text-sm"
         onClick={() => setOpen(!open)}
         title="切换语言"
+        aria-label="切换语言"
+        aria-expanded={open}
+        aria-haspopup="listbox"
       >
-        🌐
+        <span aria-hidden="true">🌐</span>
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-1 bg-editor-surface border border-editor-border rounded shadow-lg z-50 min-w-[100px]">
+        <div className="absolute top-full right-0 mt-1 bg-editor-surface border border-editor-border rounded shadow-lg z-50 min-w-[100px]" role="listbox" aria-label="选择语言">
           {localesList.map((item) => (
             <button
               key={item.value}
@@ -32,6 +35,8 @@ export default function LanguageSwitcher() {
                 item.value === locale ? 'text-editor-accent' : 'text-editor-text'
               }`}
               onClick={() => handleSelect(item.value)}
+              role="option"
+              aria-selected={item.value === locale}
             >
               {item.label}
             </button>

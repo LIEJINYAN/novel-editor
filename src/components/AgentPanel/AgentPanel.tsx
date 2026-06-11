@@ -5,6 +5,7 @@ import { getAIConfig } from '../../services/aiService'
 import { useDocumentStore } from '../../store/documentStore'
 import { useTabStore } from '../../store/tabStore'
 import { showError } from '../../utils/toast'
+import { t } from '../../i18n'
 
 interface Props {
   editorContent: string
@@ -331,7 +332,7 @@ export default function AgentPanel({
     try {
       await agent.processMessage(userMessage)
     } catch (err) {
-      setError((err as Error).message || '发送失败，请重试')
+      setError((err as Error).message || t('agent.sendFailed'))
       console.error('Agent error:', err)
     } finally {
       setStreaming(false)
@@ -348,7 +349,7 @@ export default function AgentPanel({
     try {
       await agent.processMessage(lastSentMessage)
     } catch (err) {
-      setError((err as Error).message || '重试失败')
+      setError((err as Error).message || t('agent.retryFailed'))
       console.error('Agent retry error:', err)
     } finally {
       setStreaming(false)
@@ -361,7 +362,7 @@ export default function AgentPanel({
     try {
       await agent.approvePendingTools()
     } catch (err) {
-      setError((err as Error).message || '批准失败')
+      setError((err as Error).message || t('agent.approveFailed'))
       console.error('Approve error:', err)
     } finally {
       setStreaming(false)
@@ -369,11 +370,11 @@ export default function AgentPanel({
   }, [agent])
 
   const handleReject = useCallback(() => {
-    agent.rejectPendingTools('操作已取消。')
+    agent.rejectPendingTools(t('agent.operationCancelled'))
   }, [agent])
 
   const handleStop = useCallback(() => {
-    agent.rejectPendingTools('操作已取消。')
+    agent.rejectPendingTools(t('agent.operationCancelled'))
     setStreaming(false)
     setStreamText('')
   }, [agent])
@@ -424,16 +425,16 @@ export default function AgentPanel({
   }, [agent])
 
   const QUICK_ACTIONS = [
-    { label: '续写', prompt: '请续写当前文档的内容' },
-    { label: '润色', prompt: '请润色当前选中的文本' },
-    { label: '摘要', prompt: '请为当前文档生成摘要' },
-    { label: '扩写', prompt: '请扩写当前选中的内容' },
-    { label: '翻译', prompt: '请将当前选中文本翻译成英文' },
-    { label: '纠错', prompt: '请检查并修正当前文档中的错误' },
-    { label: '加粗', prompt: '请将选中的文本设为加粗格式' },
-    { label: '标题', prompt: '请将选中的文本设为标题' },
-    { label: '搜索', prompt: '请在文档中搜索: ' },
-    { label: '统计', prompt: '请获取当前文档的字数统计' },
+    { label: t('agent.quickActions.continue'), prompt: t('agent.quickPrompts.continue') },
+    { label: t('agent.quickActions.polish'), prompt: t('agent.quickPrompts.polish') },
+    { label: t('agent.quickActions.summarize'), prompt: t('agent.quickPrompts.summarize') },
+    { label: t('agent.quickActions.expand'), prompt: t('agent.quickPrompts.expand') },
+    { label: t('agent.quickActions.translate'), prompt: t('agent.quickPrompts.translate') },
+    { label: t('agent.quickActions.correct'), prompt: t('agent.quickPrompts.correct') },
+    { label: t('agent.quickActions.bold'), prompt: t('agent.quickPrompts.bold') },
+    { label: t('agent.quickActions.heading'), prompt: t('agent.quickPrompts.heading') },
+    { label: t('agent.quickActions.search'), prompt: t('agent.quickPrompts.search') },
+    { label: t('agent.quickActions.stats'), prompt: t('agent.quickPrompts.stats') },
   ]
 
   return (
@@ -445,7 +446,7 @@ export default function AgentPanel({
           </h2>
           {agentState?.humanReviewRequired && (
             <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/20 text-yellow-500 rounded" role="status">
-              待确认
+              {t('agent.pendingReview')}
             </span>
           )}
         </div>
@@ -453,8 +454,8 @@ export default function AgentPanel({
           <button
             onClick={handleNewConversation}
             className="text-[10px] text-editor-muted hover:text-editor-text px-1.5 py-0.5 rounded hover:bg-editor-surface"
-            aria-label="新对话"
-            title="新对话"
+            aria-label={t('agent.newChat')}
+            title={t('agent.newChat')}
           >
             +
           </button>
@@ -468,40 +469,40 @@ export default function AgentPanel({
                   onReplaceContent(result.undoAction.data.text)
                 }
               } else {
-                showError('无可撤销操作')
+                showError(t('agent.noUndo'))
               }
             }}
             disabled={!agent.canUndo()}
             className="text-[10px] text-editor-muted hover:text-editor-text disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="撤销上次操作"
-            title="撤销上次操作"
+            aria-label={t('agent.undoLast')}
+            title={t('agent.undoLast')}
           >
             ↩
           </button>
           <button
             onClick={() => setShowHistory(!showHistory)}
             className={`text-[10px] ${showHistory ? 'text-editor-accent' : 'text-editor-muted hover:text-editor-text'}`}
-            aria-label="工具历史"
-            title="工具历史"
+            aria-label={t('agent.toolHistory')}
+            title={t('agent.toolHistory')}
           >
             📋 {toolHistory.length > 0 && <span>({toolHistory.length})</span>}
           </button>
           <button
             onClick={handleClearHistory}
             className={`text-[10px] ${confirmClear ? 'text-red-500' : 'text-editor-muted hover:text-editor-text'}`}
-            aria-label={confirmClear ? '确认清空' : '清空对话'}
-            title={confirmClear ? '再次点击确认清空' : '清空对话'}
+            aria-label={confirmClear ? t('agent.confirmClear') : t('agent.clearChat')}
+            title={confirmClear ? t('agent.confirmClear') : t('agent.clearChat')}
           >
-            {confirmClear ? '确认清空?' : '清空'}
+            {confirmClear ? t('agent.confirmClear') : t('agent.clear')}
           </button>
         </div>
       </div>
 
       {showHistory && (
         <div className="border-b border-editor-border p-2 max-h-40 overflow-y-auto">
-          <p className="text-[10px] text-editor-muted mb-1">工具调用历史</p>
+          <p className="text-[10px] text-editor-muted mb-1">{t('agent.toolCallHistory')}</p>
           {toolHistory.length === 0 ? (
-            <p className="text-[10px] text-editor-muted/50">暂无记录</p>
+            <p className="text-[10px] text-editor-muted/50">{t('agent.noRecords')}</p>
           ) : (
             <div className="space-y-1">
               {toolHistory.slice().reverse().map((item) => (
@@ -522,7 +523,7 @@ export default function AgentPanel({
 
       {conversations.length > 0 && (
         <div className="border-b border-editor-border p-2">
-          <p className="text-[10px] text-editor-muted mb-1">历史对话</p>
+          <p className="text-[10px] text-editor-muted mb-1">{t('agent.historyConversations')}</p>
           <div className="space-y-1 max-h-24 overflow-y-auto">
             {conversations.slice(0, 5).map((conv) => (
               <button
@@ -537,7 +538,7 @@ export default function AgentPanel({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-3" role="log" aria-live="polite" aria-label="对话消息">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3" role="log" aria-live="polite" aria-label={t('agent.title')}>
         {error && (
           <div className="p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-500 flex items-center justify-between" role="alert">
             <span>❌ {error}</span>
@@ -546,12 +547,12 @@ export default function AgentPanel({
                 onClick={handleRetry}
                 className="text-red-500 hover:text-red-600 text-[10px] underline"
               >
-                重试
+                {t('agent.retry')}
               </button>
               <button
                 onClick={() => setError(null)}
                 className="text-red-500 hover:text-red-600"
-                aria-label="关闭错误"
+                aria-label={t('agent.closeError')}
               >
                 ×
               </button>
@@ -561,15 +562,15 @@ export default function AgentPanel({
 
         {!apiConfigured && messages.length === 0 && (
           <div className="text-center text-editor-muted text-xs py-8">
-            <p className="mb-2">⚠️ 请先配置 AI API</p>
-            <p className="text-[10px]">在 AI 面板的设置中配置 API 密钥后即可使用 Agent</p>
+            <p className="mb-2">⚠️ {t('agent.configureAPI')}</p>
+            <p className="text-[10px]">{t('agent.configureAPIDetail')}</p>
           </div>
         )}
 
         {apiConfigured && messages.length === 0 && (
           <div className="text-center text-editor-muted text-xs py-8">
-            <p className="mb-2">🤖 AI Agent 已就绪</p>
-            <p className="text-[10px]">支持工具调用、多轮对话、编辑器操作</p>
+            <p className="mb-2">🤖 {t('agent.ready')}</p>
+            <p className="text-[10px]">{t('agent.readyDetail')}</p>
           </div>
         )}
 
@@ -592,9 +593,9 @@ export default function AgentPanel({
                   <button
                     onClick={() => handleCopyMessage(msg.content)}
                     className="text-[10px] text-editor-muted mt-1 hover:text-editor-accent ml-1"
-                    aria-label="复制消息"
-                  >
-                    复制
+                    aria-label={t('agent.copy')}
+                   >
+                     {t('agent.copy')}
                   </button>
                 )}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
@@ -622,9 +623,9 @@ export default function AgentPanel({
               <div className="flex items-center gap-2 mb-1">
                 <span className="w-2 h-2 bg-editor-accent rounded-full animate-pulse" />
                 <span className="text-[10px]">
-                  {agentState?.currentStep === 'execute' && '🔧 执行工具中...'}
-                  {agentState?.currentStep === 'respond' && '💬 生成回复中...'}
-                  {agentState?.currentStep === 'idle' && '⏳ 处理中...'}
+                  {agentState?.currentStep === 'execute' && t('agent.executingTool')}
+                   {agentState?.currentStep === 'respond' && t('agent.generatingReply')}
+                   {agentState?.currentStep === 'idle' && t('agent.processing')}
                 </span>
               </div>
               {streamText && (
@@ -645,8 +646,8 @@ export default function AgentPanel({
       </div>
 
       {agentState?.humanReviewRequired && (
-        <div className="mx-3 mb-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg" role="alertdialog" aria-label="需要确认操作">
-          <p className="text-xs text-yellow-500 mb-2">⚠️ 需要确认操作</p>
+        <div className="mx-3 mb-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg" role="alertdialog" aria-label={t('agent.confirmOperation')}>
+           <p className="text-xs text-yellow-500 mb-2">⚠️ {t('agent.confirmOperation')}</p>
           <div className="text-[10px] text-editor-muted mb-2 max-h-20 overflow-y-auto">
             {agentState.humanReviewData?.map((tc: any, i: number) => (
               <div key={i}>
@@ -655,20 +656,20 @@ export default function AgentPanel({
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-editor-muted mb-2">按 Enter 批准，Escape 拒绝</p>
+          <p className="text-[10px] text-editor-muted mb-2">{t('agent.approveHint')}</p>
           <div className="flex gap-2">
             <button
               ref={approveBtnRef}
               onClick={handleApprove}
               className="flex-1 px-2 py-1 text-[10px] bg-green-500 text-white rounded hover:bg-green-600"
             >
-              ✓ 批准
+               ✓ {t('agent.approve')}
             </button>
             <button
               onClick={handleReject}
               className="flex-1 px-2 py-1 text-[10px] bg-red-500/20 text-red-500 rounded hover:bg-red-500/30"
             >
-              ✕ 拒绝
+               ✕ {t('agent.reject')}
             </button>
           </div>
         </div>
@@ -680,7 +681,7 @@ export default function AgentPanel({
             key={action.label}
             onClick={() => {
               if (input && input !== action.prompt) {
-                if (!confirm(`当前输入将被替换为"${action.label}"操作，确定？`)) return
+                if (!confirm(t('agent.confirmReplace', { label: action.label }))) return
               }
               setInput(action.prompt)
               inputRef.current?.focus()
@@ -699,17 +700,17 @@ export default function AgentPanel({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={!apiConfigured ? '请先配置AI API密钥' : streaming ? 'AI处理中...按Esc取消' : '输入指令... (Enter发送, Shift+Enter换行)'}
+             placeholder={!apiConfigured ? t('agent.configureAPIPlaceholder') : streaming ? t('agent.streamingPlaceholder') : t('agent.inputPlaceholder')}
             className="flex-1 bg-editor-bg text-editor-text text-xs px-3 py-2 rounded border border-editor-border outline-none resize-none placeholder:text-editor-muted"
             rows={2}
             disabled={streaming}
-            aria-label="输入指令"
+             aria-label={t('agent.inputCommand')}
           />
           {streaming ? (
             <button
               onClick={handleStop}
               className="px-3 py-2 bg-red-500/20 text-red-500 text-xs rounded hover:bg-red-500/30"
-              aria-label="停止生成"
+               aria-label={t('agent.stopGeneration')}
             >
               ■
             </button>
@@ -718,7 +719,7 @@ export default function AgentPanel({
               onClick={handleSend}
               disabled={!input.trim() || streaming || !apiConfigured}
               className="px-3 py-2 bg-editor-accent text-editor-bg text-xs rounded hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="发送消息"
+               aria-label={t('agent.sendMessage')}
             >
               →
             </button>

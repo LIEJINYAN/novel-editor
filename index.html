@@ -15,6 +15,17 @@
   </head>
   <body class="bg-editor-bg text-editor-text">
     <div id="root"></div>
+    <script>
+      // Skip-to-content link for keyboard users
+      document.addEventListener('DOMContentLoaded', function() {
+        var skipLink = document.createElement('a');
+        skipLink.href = '#main-content';
+        skipLink.className = 'skip-to-content';
+        skipLink.textContent = '跳转到主内容';
+        skipLink.setAttribute('tabindex', '0');
+        document.body.insertBefore(skipLink, document.body.firstChild);
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {

@@ -3,6 +3,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDocumentStore } from '../store/documentStore'
 import { useTabStore } from '../store/tabStore'
 import * as tauriService from '../services/tauriService'
+import { t } from '../i18n'
 
 export function useMultiWindow() {
   const addDoc = useDocumentStore((s) => s.addDoc)
@@ -12,7 +13,7 @@ export function useMultiWindow() {
   const handleCreateNewWindow = useCallback(
     async (data: { title: string }) => {
       const id = await addDoc({
-        title: data.title || '新文档',
+        title: data.title || t('sidebar.untitled'),
         type: 'chapter',
         content: {
           type: 'doc',
@@ -21,7 +22,7 @@ export function useMultiWindow() {
         parentId: null,
       })
       setCurrentDoc(id)
-      openTab(id, data.title || '新文档')
+      openTab(id, data.title || t('sidebar.untitled'))
     },
     [addDoc, setCurrentDoc, openTab]
   )

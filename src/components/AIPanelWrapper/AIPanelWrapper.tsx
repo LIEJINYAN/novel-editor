@@ -59,12 +59,14 @@ export default function AIPanelWrapper({
           role="complementary"
           aria-label="AI面板"
         >
-          <div className="flex items-center gap-1 px-2 pt-2 pb-1 border-b border-editor-border">
+          <div className="flex items-center gap-1 px-2 pt-2 pb-1 border-b border-editor-border" role="tablist" aria-label="AI面板标签">
             <button
               onClick={() => setAgentMode(false)}
               className={`flex-1 px-2 py-1 text-[10px] rounded transition-colors ${!agentMode ? 'bg-editor-accent text-editor-bg' : 'text-editor-muted hover:text-editor-text'}`}
               aria-selected={!agentMode}
               role="tab"
+              aria-controls="ai-panel-content"
+              id="ai-tab"
             >
               AI助手
             </button>
@@ -73,11 +75,13 @@ export default function AIPanelWrapper({
               className={`flex-1 px-2 py-1 text-[10px] rounded transition-colors ${agentMode ? 'bg-editor-accent text-editor-bg' : 'text-editor-muted hover:text-editor-text'}`}
               aria-selected={agentMode}
               role="tab"
+              aria-controls="agent-panel-content"
+              id="agent-tab"
             >
               Agent
             </button>
           </div>
-          <div role="tabpanel">
+          <div role="tabpanel" id={agentMode ? 'agent-panel-content' : 'ai-panel-content'} aria-labelledby={agentMode ? 'agent-tab' : 'ai-tab'}>
             {agentMode ? (
               <AgentPanel
                 editorContent={editorContent}
