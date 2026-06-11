@@ -32,6 +32,21 @@ export async function createNewWindow(title: string) {
   await win.emit('create-new-window', { title })
 }
 
+export async function createWindow(url: string): Promise<void> {
+  try {
+    await invoke('plugin:shell|open', { url, args: [] })
+  } catch {
+    const win = getCurrentWebviewWindow()
+    await win.emit('create-new-window', { url })
+  }
+}
+
+export function onWindowCreated(callback: (data: { url: string }) => void): Promise<UnlistenFn> {
+  return listen<{ url: string }>('create-new-window', (event) => {
+    callback(event.payload)
+  })
+}
+
 // --- File Dialogs ---
 export async function openFileDialog(): Promise<string | null> {
   const selected = await open({

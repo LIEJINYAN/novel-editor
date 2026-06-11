@@ -18,12 +18,19 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     minify: 'esbuild',
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'tiptap-vendor': ['@tiptap/core', '@tiptap/react', '@tiptap/starter-kit'],
-          'monaco-vendor': ['monaco-editor'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-dom')) return 'vendor-react'
+            if (id.includes('/react/') || id.includes('/react\\')) return 'vendor-react'
+            if (id.includes('@tiptap/') || id.includes('lowlight')) return 'vendor-tiptap'
+            if (id.includes('monaco-editor')) return 'vendor-monaco'
+            if (id.includes('@langchain/')) return 'vendor-langchain'
+            if (id.includes('zustand')) return 'vendor-zustand'
+            if (id.includes('@tauri-apps/')) return 'vendor-tauri'
+          }
         },
       },
     },

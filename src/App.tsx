@@ -22,6 +22,7 @@ import AppFooter from './components/AppFooter/AppFooter'
 import ModalPanels from './components/ModalPanels/ModalPanels'
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary'
 import { useMobile } from './hooks/useMobile'
+import { useMultiWindow } from './hooks/useMultiWindow'
 
 import type { EditorRef } from './components/Editor/Editor'
 import type { Command } from './components/CommandPalette/CommandPalette'
@@ -71,6 +72,7 @@ function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
 
   const { isMobile } = useMobile()
+  const { openInNewWindow } = useMultiWindow()
   const { contextMenu, showContextMenu, hideContextMenu } = useContextMenu()
 
   const updateDoc = useDocumentStore((s) => s.updateDoc)
@@ -114,11 +116,53 @@ function App() {
           }, 5000)
 
           // Listen for deep link (novelengine:// protocol)
-          await tauri.onDeepLink((urls) => {
+          await tauri.onDeepLink(async (urls) => {
             for (const url of urls) {
               if (url.startsWith('novelengine://open/')) {
                 const filePath = decodeURIComponent(url.replace('novelengine://open/', ''))
-                // File opened via protocol - handled by import
+                try {
+                  const content = await tauri.readFile(filePath)
+                  const ext = filePath.split('.').pop()?.toLowerCase()
+                  const isMarkdown = ext === 'md' || ext === 'markdown'
+                  const title = filePath.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, '') || 'Deep Link Document'
+
+                  const tiptapContent = isMarkdown
+                    ? (() => {
+                        const blocks: any[] = []
+                        content.split('\n').forEach((line: string) => {
+                          if (line.startsWith('# ')) {
+                            blocks.push({ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: line.slice(2) }] })
+                          } else if (line.startsWith('## ')) {
+                            blocks.push({ type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: line.slice(3) }] })
+                          } else if (line.startsWith('### ')) {
+                            blocks.push({ type: 'heading', attrs: { level: 3 }, content: [{ type: 'text', text: line.slice(4) }] })
+                          } else if (line.startsWith('> ')) {
+                            blocks.push({ type: 'blockquote', content: [{ type: 'paragraph', content: [{ type: 'text', text: line.slice(2) }] }] })
+                          } else if (line.trim() !== '') {
+                            blocks.push({ type: 'paragraph', content: [{ type: 'text', text: line }] })
+                          }
+                        })
+                        return { type: 'doc', content: blocks.length > 0 ? blocks : [{ type: 'paragraph' }] }
+                      })()
+                    : {
+                        type: 'doc',
+                        content: content.split('\n').map((line: string) => ({
+                          type: 'paragraph',
+                          content: [{ type: 'text', text: line }],
+                        })),
+                      }
+
+                  const docId = await useDocumentStore.getState().addDoc({
+                    title,
+                    type: 'chapter',
+                    content: tiptapContent,
+                    parentId: null,
+                  })
+                  useDocumentStore.getState().setCurrentDoc(docId)
+                  useTabStore.getState().openTab(docId, title)
+                } catch (err) {
+                  console.error('Failed to open file from deep link:', err)
+                }
               }
             }
           })
