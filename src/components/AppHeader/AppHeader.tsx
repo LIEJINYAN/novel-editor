@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useThemeStore } from '../../store/themeStore'
 import { useUIStore } from '../../store/uiStore'
-import { exportToMarkdown, exportToHTML, exportToPDF, exportToText, exportToDOCX, exportToEPUB } from '../../utils/export'
+import { exportToMarkdown, exportToHTML, exportToPDF, exportToText, exportToDOCX, exportToEPUB, exportToJSON, exportToOPML } from '../../utils/export'
 import { t } from '../../i18n'
 import { useClickOutside } from '../../hooks/useClickOutside'
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher'
@@ -101,6 +101,12 @@ export default function AppHeader({
                 </button>
                 <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToEPUB(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }} role="menuitem">
                   <span aria-hidden="true">📚</span> {t('export.epub') || '电子书'}
+                </button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToJSON(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }} role="menuitem">
+                  <span aria-hidden="true">{ }</span> JSON
+                </button>
+                <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToOPML(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }} role="menuitem">
+                  <span aria-hidden="true">📋</span> OPML
                 </button>
                 <div className="border-t border-editor-border" role="separator" />
                 <button className="w-full text-left px-3 py-2 text-xs text-editor-text hover:bg-editor-bg" onClick={() => { if (currentDoc) exportToPDF(currentDoc.title, currentDoc.content); setExportMenuOpen(false) }} role="menuitem">

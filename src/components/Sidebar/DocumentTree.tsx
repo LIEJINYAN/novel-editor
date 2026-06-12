@@ -1,6 +1,9 @@
 import { useState, useRef, useMemo, useCallback } from 'react'
 import { useDocumentStore, type Document, type Folder } from '../../store/documentStore'
 import { useTabStore } from '../../store/tabStore'
+import { useTagStore } from '../../store/tagStore'
+import TagFilter from '../TagFilter/TagFilter'
+import TagSelector from '../TagSelector/TagSelector'
 import ConfirmDialog from '../common/ConfirmDialog'
 
 const TYPE_ICONS: Record<string, string> = {
@@ -178,6 +181,8 @@ function TreeNode({ doc, isActive, onSelect, onDragStart, onDragOver, onDrop, on
   const [renameValue, setRenameValue] = useState(doc.title)
   const inputRef = useRef<HTMLInputElement>(null)
   const isDragOver = dragOverId === doc.id
+  const { getTagsForDocument } = useTagStore()
+  const docTags = getTagsForDocument(doc.id)
 
   const handleRename = () => {
     if (renameValue.trim() && renameValue !== doc.title) {
@@ -218,6 +223,19 @@ function TreeNode({ doc, isActive, onSelect, onDragStart, onDragOver, onDrop, on
         ) : (
           <span className="truncate flex-1">{doc.title}</span>
         )}
+        {docTags.length > 0 && (
+          <span className="flex gap-0.5">
+            {docTags.slice(0, 2).map((tag) => (
+              <span
+                key={tag.id}
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: tag.color }}
+              />
+            ))}
+            {docTags.length > 2 && <span className="text-[8px] text-editor-muted">+{docTags.length - 2}</span>}
+          </span>
+        )}
+        <TagSelector docId={doc.id} />
         <span className="text-xs text-editor-muted opacity-0 group-hover:opacity-100">
           {new Date(doc.updatedAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })}
         </span>
@@ -268,8 +286,10 @@ export default function DocumentTree() {
   const renameFolder = useDocumentStore((s) => s.renameFolder)
   const moveDocToFolder = useDocumentStore((s) => s.moveDocToFolder)
   const { openTab } = useTabStore()
+  const { getDocumentsWithTag } = useTagStore()
   const [filter, setFilter] = useState('')
   const [filterInput, setFilterInput] = useState('')
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null)
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<Folder | null>(null)
@@ -280,11 +300,29 @@ export default function DocumentTree() {
 
   const debouncedSetFilter = useMemo(() => debounce((v: string) => setFilter(v), 200), [])
 
-  const chapters = useMemo(() => documents.filter((d) => d.type === 'chapter' && !d.folderId && d.title.toLowerCase().includes(filter.toLowerCase())), [documents, filter])
-  const characters = useMemo(() => documents.filter((d) => d.type === 'character' && !d.folderId && d.title.toLowerCase().includes(filter.toLowerCase())), [documents, filter])
-  const scenes = useMemo(() => documents.filter((d) => d.type === 'scene' && !d.folderId && d.title.toLowerCase().includes(filter.toLowerCase())), [documents, filter])
+  const filterByTags = useCallback((docs: Document[]) => {
+    if (selectedTagIds.length === 0) return docs
+    return docs.filter((doc) => {
+      const docTagIds = getDocumentsWithTag(doc.id)
+      return selectedTagIds.some((tagId) => docTagIds.includes(tagId))
+    })
+  }, [selectedTagIds, getDocumentsWithTag])
+
+  const chapters = useMemo(() => filterByTags(documents.filter((d) => d.type === 'chapter' && !d.folderId && d.title.toLowerCase().includes(filter.toLowerCase()))), [documents, filter, filterByTags])
+  const characters = useMemo(() => filterByTags(documents.filter((d) => d.type === 'character' && !d.folderId && d.title.toLowerCase().includes(filter.toLowerCase()))), [documents, filter, filterByTags])
+  const scenes = useMemo(() => filterByTags(documents.filter((d) => d.type === 'scene' && !d.folderId && d.title.toLowerCase().includes(filter.toLowerCase()))), [documents, filter, filterByTags])
   const rootFolders = useMemo(() => folders.filter((f) => !f.parentId), [folders])
   const hasResults = chapters.length > 0 || characters.length > 0 || scenes.length > 0 || rootFolders.length > 0
+
+  const handleToggleTag = useCallback((tagId: string) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    )
+  }, [])
+
+  const handleClearTags = useCallback(() => {
+    setSelectedTagIds([])
+  }, [])
 
   const handleCreate = async (type: Document['type']) => {
     const labels: Record<string, string> = { chapter: '新章节', scene: '新场景', character: '新人物', code_snippet: '新代码片段' }
@@ -443,6 +481,8 @@ export default function DocumentTree() {
           </button>
         </div>
       </div>
+
+      <TagFilter selectedTagIds={selectedTagIds} onToggleTag={handleToggleTag} onClear={handleClearTags} />
 
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
         {filter && !hasResults && (

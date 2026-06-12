@@ -18,6 +18,7 @@ const WritingReminder = lazy(() => import('../WritingReminder/WritingReminder'))
 const DocumentShare = lazy(() => import('../DocumentShare/DocumentShare'))
 const ClipboardHistory = lazy(() => import('../ClipboardHistory/ClipboardHistory'))
 const QuickShortcuts = lazy(() => import('../KeyboardShortcutsHelp/QuickShortcuts'))
+const PerformancePanel = lazy(() => import('../PerformancePanel/PerformancePanel'))
 
 interface ModalPanelsProps {
   versionHistoryOpen: boolean
@@ -54,6 +55,8 @@ interface ModalPanelsProps {
   setClipboardOpen: (open: boolean) => void
   quickShortcutsOpen: boolean
   setQuickShortcutsOpen: (open: boolean) => void
+  performanceOpen: boolean
+  setPerformanceOpen: (open: boolean) => void
   currentDocId: string | undefined
   currentDocTitle: string | undefined
   currentDocContent: object | undefined
@@ -98,6 +101,8 @@ export default function ModalPanels({
   setClipboardOpen,
   quickShortcutsOpen,
   setQuickShortcutsOpen,
+  performanceOpen,
+  setPerformanceOpen,
   currentDocId,
   currentDocTitle,
   currentDocContent,
@@ -274,6 +279,14 @@ export default function ModalPanels({
         <ErrorBoundary>
           <Suspense fallback={<LoadingFallback />}>
             <QuickShortcuts onClose={() => setQuickShortcutsOpen(false)} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
+      {performanceOpen && (
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingFallback />}>
+            <PerformancePanel onClose={() => setPerformanceOpen(false)} />
           </Suspense>
         </ErrorBoundary>
       )}

@@ -28,7 +28,7 @@ export default function AppSidebar({ editor, onOutlinePanelOpen }: AppSidebarPro
     <ErrorBoundary>
       <Suspense fallback={<LoadingFallback />}>
         <aside
-          className={`bg-editor-sidebar border-r border-editor-border flex flex-col transition-all duration-200 ${
+          className={`bg-editor-sidebar border-r border-editor-border flex flex-col transition-all duration-200 shrink-0 ${
             sidebarOpen ? (isMobile ? 'fixed inset-y-0 left-0 w-60 z-40 shadow-2xl' : 'w-60') : 'w-0 overflow-hidden'
           }`}
           role="complementary"

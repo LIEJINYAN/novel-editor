@@ -30,8 +30,6 @@ export default function TabBar({ onTabSelect }: Props) {
   const documents = useDocumentStore((s) => s.documents)
   const [showRecentlyClosed, setShowRecentlyClosed] = useState(false)
 
-  if (openTabs.length === 0) return null
-
   const handleTabClick = (docId: string) => {
     setActiveTab(docId)
     onTabSelect(docId)
@@ -82,6 +80,8 @@ export default function TabBar({ onTabSelect }: Props) {
       }
     }
   }, [closeTab, onTabSelect])
+
+  if (openTabs.length === 0) return null
 
   return (
     <div className="flex items-center bg-editor-sidebar border-b border-editor-border overflow-x-auto shrink-0" role="tablist" aria-label="打开的文档">

@@ -21,6 +21,22 @@ interface KeyboardShortcuts {
   onExitFocus?: () => void
   onStats?: () => void
   onCommandPalette?: () => void
+  onToggleTheme?: () => void
+  onCloseTab?: () => void
+  onBold?: () => void
+  onItalic?: () => void
+  onUnderline?: () => void
+  onStrikethrough?: () => void
+  onHighlight?: () => void
+  onCode?: () => void
+  onLink?: () => void
+  onBlockquote?: () => void
+  onBulletList?: () => void
+  onOrderedList?: () => void
+  onHeading1?: () => void
+  onHeading2?: () => void
+  onHeading3?: () => void
+  onHorizontalRule?: () => void
 }
 
 export function useKeyboardShortcuts({
@@ -41,9 +57,25 @@ export function useKeyboardShortcuts({
   onExitFocus,
   onStats,
   onCommandPalette,
+  onToggleTheme,
+  onCloseTab,
+  onBold,
+  onItalic,
+  onUnderline,
+  onStrikethrough,
+  onHighlight,
+  onCode,
+  onLink,
+  onBlockquote,
+  onBulletList,
+  onOrderedList,
+  onHeading1,
+  onHeading2,
+  onHeading3,
+  onHorizontalRule,
 }: KeyboardShortcuts = {}) {
   const saveToDB = useDocumentStore((s) => s.saveToDB)
-  const { openTabs, setActiveTab } = useTabStore()
+  const { openTabs, setActiveTab, closeTab } = useTabStore()
   const matchShortcut = useShortcutStore((s) => s.matchShortcut)
 
   const handleKeyDown = useCallback(
@@ -75,6 +107,33 @@ export function useKeyboardShortcuts({
         fullscreen: () => onFullscreen?.(),
         exitFocus: () => onExitFocus?.(),
         toggleAIPanel: () => onToggleAIPanel?.(),
+        toggleSidebar: () => onToggleSidebar?.(),
+        toggleTheme: () => onToggleTheme?.(),
+        closeTab: () => {
+          const currentDocId = useDocumentStore.getState().currentDocId
+          if (currentDocId) {
+            closeTab(currentDocId)
+            const newActiveId = useTabStore.getState().activeTabId
+            if (newActiveId) {
+              useDocumentStore.getState().setCurrentDoc(newActiveId)
+            }
+          }
+        },
+        newDocument: () => onNewDoc?.(),
+        bold: () => onBold?.(),
+        italic: () => onItalic?.(),
+        underline: () => onUnderline?.(),
+        strikethrough: () => onStrikethrough?.(),
+        highlight: () => onHighlight?.(),
+        code: () => onCode?.(),
+        link: () => onLink?.(),
+        blockquote: () => onBlockquote?.(),
+        bulletList: () => onBulletList?.(),
+        orderedList: () => onOrderedList?.(),
+        heading1: () => onHeading1?.(),
+        heading2: () => onHeading2?.(),
+        heading3: () => onHeading3?.(),
+        horizontalRule: () => onHorizontalRule?.(),
       }
 
       if (matched.id === 'nextTab' || matched.id === 'prevTab') {
@@ -104,7 +163,7 @@ export function useKeyboardShortcuts({
         action()
       }
     },
-    [saveToDB, onSave, onNewDoc, onToggleSidebar, onToggleAIPanel, onSearch, onHelp, onFindReplace, onUndo, onRedo, onWordCount, onOutline, onFocusMode, onTypewriter, onFullscreen, onExitFocus, onStats, onCommandPalette, openTabs, setActiveTab, matchShortcut]
+    [saveToDB, onSave, onNewDoc, onToggleSidebar, onToggleAIPanel, onSearch, onHelp, onFindReplace, onUndo, onRedo, onWordCount, onOutline, onFocusMode, onTypewriter, onFullscreen, onExitFocus, onStats, onCommandPalette, onToggleTheme, onCloseTab, onBold, onItalic, onUnderline, onStrikethrough, onHighlight, onCode, onLink, onBlockquote, onBulletList, onOrderedList, onHeading1, onHeading2, onHeading3, onHorizontalRule, openTabs, setActiveTab, closeTab, matchShortcut]
   )
 
   useEffect(() => {

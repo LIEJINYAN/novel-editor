@@ -160,12 +160,19 @@ test.describe('Editor Functionality', () => {
     const editorArea = page.locator('.ProseMirror')
     await expect(editorArea).toBeVisible({ timeout: 5000 })
     await editorArea.click()
+    await page.waitForTimeout(200)
     await page.keyboard.type('bold text')
-    // Select all text
-    await page.keyboard.press('Control+a')
+    await page.waitForTimeout(200)
+    // Click at end of text, then select all via triple-click or keyboard
+    await editorArea.click()
+    await page.keyboard.press('Home')
+    await page.keyboard.down('Shift')
+    await page.keyboard.press('End')
+    await page.keyboard.up('Shift')
+    await page.waitForTimeout(100)
     // Apply bold
     await page.keyboard.press('Control+b')
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(500)
     // Check if strong/bold element exists
     const hasBold = await page.evaluate(() => {
       const editor = document.querySelector('.ProseMirror')

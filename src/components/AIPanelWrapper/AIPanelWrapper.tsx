@@ -53,7 +53,7 @@ export default function AIPanelWrapper({
     <ErrorBoundary>
       <Suspense fallback={<LoadingFallback />}>
         <aside
-          className={`bg-editor-sidebar border-l border-editor-border flex flex-col transition-all duration-200 ${
+          className={`bg-editor-sidebar border-l border-editor-border flex flex-col transition-all duration-200 shrink-0 ${
             aiPanelOpen ? panelWidth : 'w-0 overflow-hidden'
           } ${isMobile ? 'absolute inset-y-0 right-0 z-40' : ''}`}
           role="complementary"

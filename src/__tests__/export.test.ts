@@ -9,6 +9,8 @@ import {
   exportToHTML,
   exportToEPUB,
   exportToPDF,
+  exportToJSON,
+  exportToOPML,
 } from '../utils/export'
 
 const mockContent = {
@@ -235,6 +237,16 @@ describe('Export Utilities', () => {
 
     it('exportToEPUB should create download', () => {
       exportToEPUB('测试', mockContent)
+      expect(downloadSpy).toHaveBeenCalled()
+    })
+
+    it('exportToJSON should create download', () => {
+      exportToJSON('测试', mockContent)
+      expect(downloadSpy).toHaveBeenCalled()
+    })
+
+    it('exportToOPML should create download', () => {
+      exportToOPML('测试', mockContent)
       expect(downloadSpy).toHaveBeenCalled()
     })
   })

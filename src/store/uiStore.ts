@@ -23,6 +23,8 @@ interface UIState {
 const FOCUS_MODE_KEY = 'novel-engine-focus-mode'
 const TYPEWRITER_MODE_KEY = 'novel-engine-typewriter-mode'
 const FOCUS_TOOLBAR_MODE_KEY = 'novel-engine-focus-toolbar-mode'
+const SIDEBAR_OPEN_KEY = 'novel-engine-sidebar-open'
+const AI_PANEL_OPEN_KEY = 'novel-engine-ai-panel-open'
 
 function getInitialFocusMode(): boolean {
   try {
@@ -50,12 +52,28 @@ function getInitialFocusToolbarMode(): FocusToolbarMode {
   return 'auto'
 }
 
+function getInitialSidebarOpen(): boolean {
+  try {
+    const stored = localStorage.getItem(SIDEBAR_OPEN_KEY)
+    if (stored !== null) return stored === 'true'
+  } catch {}
+  return true
+}
+
+function getInitialAiPanelOpen(): boolean {
+  try {
+    const stored = localStorage.getItem(AI_PANEL_OPEN_KEY)
+    if (stored !== null) return stored === 'true'
+  } catch {}
+  return true
+}
+
 export const useUIStore = create<UIState>((set) => ({
   focusMode: getInitialFocusMode(),
   typewriterMode: getInitialTypewriterMode(),
   fullscreen: false,
-  sidebarOpen: true,
-  aiPanelOpen: true,
+  sidebarOpen: getInitialSidebarOpen(),
+  aiPanelOpen: getInitialAiPanelOpen(),
   editorFocused: false,
   focusToolbarMode: getInitialFocusToolbarMode(),
 
@@ -83,8 +101,14 @@ export const useUIStore = create<UIState>((set) => ({
       return { fullscreen: !state.fullscreen }
     }),
 
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
-  setAiPanelOpen: (open) => set({ aiPanelOpen: open }),
+  setSidebarOpen: (open) => {
+    try { localStorage.setItem(SIDEBAR_OPEN_KEY, String(open)) } catch {}
+    set({ sidebarOpen: open })
+  },
+  setAiPanelOpen: (open) => {
+    try { localStorage.setItem(AI_PANEL_OPEN_KEY, String(open)) } catch {}
+    set({ aiPanelOpen: open })
+  },
   setEditorFocused: (focused) => set({ editorFocused: focused }),
 
   setFocusToolbarMode: (mode) =>

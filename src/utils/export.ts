@@ -683,7 +683,7 @@ export function exportToRTF(title: string, content: object) {
 
 export async function batchExport(
   documents: Array<{ title: string; content: object }>,
-  format: 'markdown' | 'html' | 'txt' | 'pdf' | 'latex' | 'rtf'
+  format: 'markdown' | 'html' | 'txt' | 'pdf' | 'latex' | 'rtf' | 'json' | 'opml'
 ) {
   const exporters = {
     markdown: exportToMarkdown,
@@ -692,6 +692,8 @@ export async function batchExport(
     pdf: exportToPDF,
     latex: exportToLaTeX,
     rtf: exportToRTF,
+    json: exportToJSON,
+    opml: exportToOPML,
   }
 
   const exporter = exporters[format]
@@ -701,4 +703,108 @@ export async function batchExport(
     exporter(doc.title, doc.content)
     await new Promise((resolve) => setTimeout(resolve, 300))
   }
+}
+
+export function exportToJSON(title: string, content: object) {
+  const jsonData = {
+    title,
+    content,
+    exportedAt: new Date().toISOString(),
+    version: '1.0',
+  }
+  downloadFile(JSON.stringify(jsonData, null, 2), `${title}.json`, 'application/json')
+}
+
+function nodeToOPML(node: TiptapNode, indent: number = 0): string {
+  const pad = '  '.repeat(indent)
+
+  if (node.type === 'text' && node.text) {
+    return node.text
+  }
+
+  if (!node.content) return ''
+
+  switch (node.type) {
+    case 'doc': {
+      const items = node.content.map((child) => nodeToOPML(child, indent + 1)).filter(Boolean)
+      return items.join('\n')
+    }
+
+    case 'heading': {
+      const level = (node.attrs?.level as number) || 1
+      const text = extractPlainText(node)
+      return `${pad}<outline text="${escapeXML(text)}" _note="heading level ${level}">`
+    }
+
+    case 'paragraph': {
+      const text = extractPlainText(node)
+      if (!text) return ''
+      return `${pad}<outline text="${escapeXML(text)}"/>`
+    }
+
+    case 'bulletList':
+    case 'orderedList': {
+      const items = node.content?.map((child) => nodeToOPML(child, indent)).filter(Boolean)
+      return items?.join('\n') || ''
+    }
+
+    case 'listItem': {
+      const text = extractPlainText(node)
+      const children = node.content?.filter((c) => c.type === 'bulletList' || c.type === 'orderedList')
+        .map((child) => nodeToOPML(child, indent + 1)).filter(Boolean)
+      
+      if (children && children.length > 0) {
+        return `${pad}<outline text="${escapeXML(text)}">\n${children.join('\n')}\n${pad}</outline>`
+      }
+      return `${pad}<outline text="${escapeXML(text)}"/>`
+    }
+
+    case 'blockquote': {
+      const text = extractPlainText(node)
+      return `${pad}<outline text="${escapeXML(text)}" _note="blockquote"/>`
+    }
+
+    case 'codeBlock': {
+      const lang = node.attrs?.language || 'text'
+      const code = node.content?.map((c) => c.text || '').join('') || ''
+      return `${pad}<outline text="${escapeXML(code)}" _note="code block: ${lang}"/>`
+    }
+
+    default: {
+      const items = node.content?.map((child) => nodeToOPML(child, indent + 1)).filter(Boolean)
+      return items?.join('\n') || ''
+    }
+  }
+}
+
+function extractPlainText(node: TiptapNode): string {
+  if (node.type === 'text' && node.text) {
+    return node.text
+  }
+  if (!node.content) return ''
+  return node.content.map(extractPlainText).join('')
+}
+
+function escapeXML(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+export function exportToOPML(title: string, content: object) {
+  const body = nodeToOPML(content as TiptapNode)
+  const opml = `<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>${escapeXML(title)}</title>
+    <dateCreated>${new Date().toUTCString()}</dateCreated>
+  </head>
+  <body>
+${body}
+  </body>
+</opml>`
+  downloadFile(opml, `${title}.opml`, 'application/xml')
 }

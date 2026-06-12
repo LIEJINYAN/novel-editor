@@ -12,6 +12,7 @@ import { useDragAndDrop } from './hooks/useDragAndDrop'
 import { t, initLocale } from './i18n'
 import { ToastProvider, useToast } from './components/common/Toast'
 import { setToastCallback } from './utils/toast'
+import { initPerformanceMonitoring } from './utils/performance'
 import TabBar from './components/TabBar/TabBar'
 import ContextMenu, { useContextMenu } from './components/ContextMenu/ContextMenu'
 import { EditorSkeleton } from './components/common/Skeleton'
@@ -70,6 +71,7 @@ function App() {
   const [clipboardOpen, setClipboardOpen] = useState(false)
   const [quickShortcutsOpen, setQuickShortcutsOpen] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [performanceOpen, setPerformanceOpen] = useState(false)
 
   const { isMobile } = useMobile()
   const { openInNewWindow } = useMultiWindow()
@@ -100,6 +102,14 @@ function App() {
     loadFromDB()
     loadSession()
     document.documentElement.classList.toggle('dark', useThemeStore.getState().theme === 'dark')
+
+    // Initialize performance monitoring
+    initPerformanceMonitoring()
+
+    // Load tags
+    import('./store/tagStore').then(({ useTagStore }) => {
+      useTagStore.getState().loadFromDB()
+    })
 
     // Tauri: auto-update check & deep link listener
     async function setupTauri() {
@@ -272,6 +282,26 @@ function App() {
     onExitFocus: () => { if (focusMode) toggleFocusMode() },
     onStats: () => setWritingStatsOpen(true),
     onCommandPalette: () => setCommandPaletteOpen((prev) => !prev),
+    onToggleTheme: toggleTheme,
+    onBold: () => editorRef.current?.getEditor()?.chain().focus().toggleBold().run(),
+    onItalic: () => editorRef.current?.getEditor()?.chain().focus().toggleItalic().run(),
+    onUnderline: () => editorRef.current?.getEditor()?.chain().focus().toggleUnderline().run(),
+    onStrikethrough: () => editorRef.current?.getEditor()?.chain().focus().toggleStrike().run(),
+    onHighlight: () => editorRef.current?.getEditor()?.chain().focus().toggleHighlight().run(),
+    onCode: () => editorRef.current?.getEditor()?.chain().focus().toggleCode().run(),
+    onLink: () => {
+      const url = prompt('输入链接 URL:')
+      if (url) {
+        editorRef.current?.getEditor()?.chain().focus().setLink({ href: url }).run()
+      }
+    },
+    onBlockquote: () => editorRef.current?.getEditor()?.chain().focus().toggleBlockquote().run(),
+    onBulletList: () => editorRef.current?.getEditor()?.chain().focus().toggleBulletList().run(),
+    onOrderedList: () => editorRef.current?.getEditor()?.chain().focus().toggleOrderedList().run(),
+    onHeading1: () => editorRef.current?.getEditor()?.chain().focus().toggleHeading({ level: 1 }).run(),
+    onHeading2: () => editorRef.current?.getEditor()?.chain().focus().toggleHeading({ level: 2 }).run(),
+    onHeading3: () => editorRef.current?.getEditor()?.chain().focus().toggleHeading({ level: 3 }).run(),
+    onHorizontalRule: () => editorRef.current?.getEditor()?.chain().focus().setHorizontalRule().run(),
   })
 
   const handleAiInsert = useCallback((text: string) => {
@@ -594,6 +624,8 @@ function App() {
         setClipboardOpen={setClipboardOpen}
         quickShortcutsOpen={quickShortcutsOpen}
         setQuickShortcutsOpen={setQuickShortcutsOpen}
+        performanceOpen={performanceOpen}
+        setPerformanceOpen={setPerformanceOpen}
         currentDocId={currentDoc?.id}
         currentDocTitle={currentDoc?.title}
         currentDocContent={currentDoc?.content}
