@@ -7,8 +7,8 @@
 | 指标 | 数据 |
 |------|------|
 | AI Agent 工具 | 96 个（19 phases） |
-| 单元测试 | 413 通过 |
-| E2E 测试 | 43 通过 |
+| 单元测试 | 541 通过 |
+| E2E 测试 | 68 通过 |
 | 支持语言 | 7 种 |
 | Tauri 桌面构建 | Windows (MSI/NSIS) |
 | CI/CD | GitHub Actions (6 jobs) |
