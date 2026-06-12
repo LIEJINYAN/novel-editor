@@ -6,7 +6,7 @@ interface PomodoroState {
   timeLeft: number
   sessions: number
   totalFocusTime: number
-  dailyStats: DailyStats
+  dailyStats: DailyStats[]
 }
 
 interface DailyStats {
@@ -161,10 +161,9 @@ export function usePomodoro(overrides: Partial<PomodoroConfig> = {}) {
     }
 
     try {
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH+JkI+Gd2Bse4aSkY2DeGdwhI+Ri4N7aHKEkJGLg3todIWQkYuDfGt1hZCRi4N8a3aFkJGLg31sdoWQkYuDfWx3hZCRi4N9bXiGkJGLg35teIaQkYuDf254hpCRi4N/bnmGkJGLg4BveoaQkYu'
-          , { volume: 0.5 })
-        } catch {}
-      }
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH+JkI+Gd2Bse4aSkY2DeGdwhI+Ri4N7aHKEkJGLg3todIWQkYuDfGt1hZCRi4N8a3aFkJGLg31sdoWQkYuDfWx3hZCRi4N9bXiGkJGLg35teIaQkYuDf254hpCRi4N/bnmGkJGLg4BveoaQkYu')
+      audio.volume = 0.5
+      audio.play().catch(() => {})
     } catch {}
   }, [fullConfig.soundEnabled])
 

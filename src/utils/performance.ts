@@ -1,4 +1,4 @@
-interface PerformanceMetric {
+export interface PerformanceMetric {
   name: string
   value: number
   rating: 'good' | 'needs-improvement' | 'poor'
@@ -6,7 +6,7 @@ interface PerformanceMetric {
   delta?: number
 }
 
-interface ErrorReport {
+export interface ErrorReport {
   id: string
   message: string
   stack?: string

@@ -11,9 +11,7 @@ export default function TagSelector({ docId }: TagSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [newTagName, setNewTagName] = useState('')
   const { addTag } = useTagStore()
-  const ref = useRef<HTMLDivElement>(null)
-
-  useClickOutside(ref, () => setIsOpen(false))
+  const ref = useClickOutside(() => setIsOpen(false))
 
   const docTags = getTagsForDocument(docId)
   const docTagIds = docTags.map((t) => t.id)

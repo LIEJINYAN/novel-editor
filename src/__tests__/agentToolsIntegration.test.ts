@@ -134,7 +134,7 @@ describe('AI Agent 工具执行集成测试', () => {
     useCommentStore.getState().addComment({
       documentId: docId,
       content: '测试评论',
-      position: 0,
+      position: { from: 0, to: 10 },
       author: 'Test',
     })
 

@@ -18,14 +18,14 @@ describe('pluginSystem/marketApi', () => {
   })
 
   it('should cache plugins after first fetch', async () => {
-    const spy = vi.spyOn(global, 'fetch')
+    const spy = vi.spyOn(globalThis, 'fetch')
     await fetchPluginRegistry()
     await fetchPluginRegistry()
     expect(spy).toHaveBeenCalledTimes(1)
   })
 
   it('should clear plugin cache', async () => {
-    const spy = vi.spyOn(global, 'fetch')
+    const spy = vi.spyOn(globalThis, 'fetch')
     await fetchPluginRegistry()
     clearPluginCache()
     await fetchPluginRegistry()
@@ -45,14 +45,14 @@ describe('pluginSystem/marketApi', () => {
   })
 
   it('should return fallback plugins on fetch error', async () => {
-    vi.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'))
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'))
     const plugins = await fetchPluginRegistry()
     expect(plugins).toBeTruthy()
     expect(plugins.length).toBe(8)
   })
 
   it('should return fallback plugins on HTTP error', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: false,
       status: 500,
     } as Response)

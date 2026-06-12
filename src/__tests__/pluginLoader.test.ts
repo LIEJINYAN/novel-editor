@@ -17,6 +17,8 @@ const mockManifest: PluginManifest = {
   version: '1.0.0',
   description: 'A test plugin',
   author: 'Test Author',
+  icon: '🔌',
+  category: 'editor',
   main: 'index.js',
   permissions: [],
 }
@@ -27,6 +29,8 @@ const mockManifest2: PluginManifest = {
   version: '1.0.0',
   description: 'Another test plugin',
   author: 'Test Author',
+  icon: '🧩',
+  category: 'ai',
   main: 'index.js',
   permissions: [],
 }

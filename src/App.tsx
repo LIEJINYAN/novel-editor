@@ -292,7 +292,7 @@ function App() {
     onLink: () => {
       const url = prompt('输入链接 URL:')
       if (url) {
-        editorRef.current?.getEditor()?.chain().focus().setLink({ href: url }).run()
+        editorRef.current?.getEditor()?.chain().focus().insertContent(`<a href="${url}">${url}</a>`).run()
       }
     },
     onBlockquote: () => editorRef.current?.getEditor()?.chain().focus().toggleBlockquote().run(),

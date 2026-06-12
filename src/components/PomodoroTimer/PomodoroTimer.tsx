@@ -138,7 +138,7 @@ export default function PomodoroTimer({ onClose }: Props) {
           <div className="bg-editor-bg rounded-lg p-3">
             <h4 className="text-xs font-semibold text-editor-text mb-2">本周统计</h4>
             <div className="space-y-1">
-              {pomodoro.getWeeklyStats().map((stat) => (
+              {pomodoro.getWeeklyStats().map((stat: { date: string; completedSessions: number; totalFocusMinutes: number; totalBreakMinutes: number }) => (
                 <div key={stat.date} className="flex justify-between text-[10px]">
                   <span className="text-editor-muted">{stat.date.slice(5)}</span>
                   <span className="text-editor-text">{stat.completedSessions}个番茄 / {stat.totalFocusMinutes}分钟</span>

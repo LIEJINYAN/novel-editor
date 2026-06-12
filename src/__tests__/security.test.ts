@@ -58,7 +58,7 @@ describe('安全测试 - XSS 防护', () => {
     useCommentStore.getState().addComment({
       documentId: docId,
       content: maliciousComment,
-      position: 0,
+      position: { from: 0, to: 10 },
       author: 'Test',
     })
 
